@@ -1,0 +1,27 @@
+import { AboutSection } from "@/components/about-section";
+import { CTASection } from "@/components/cta-section";
+import { Footer } from "@/components/footer";
+import { Hero } from "@/components/hero";
+import { LivePlayer } from "@/components/live-player";
+import { Navbar } from "@/components/navbar";
+import { ProgrammingSection } from "@/components/programming-section";
+import { StatsSection } from "@/components/stats-section";
+import { TalentNewsSection } from "@/components/talent-news-section";
+
+export default function Home() {
+  return (
+    <>
+      <Navbar />
+      <main className="overflow-x-hidden bg-white">
+        <Hero />
+        <LivePlayer />
+        <AboutSection />
+        <ProgrammingSection />
+        <TalentNewsSection />
+        <StatsSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </>
+  );
+}
