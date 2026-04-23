@@ -19,7 +19,7 @@ export function CTASection() {
               <ArrowRight size={14} />
             </a>
             <a
-              href="mailto:hola@radiolibre.fm"
+              href="mailto:radiolibre93.9@hotmail.com"
               className="inline-flex items-center gap-2 rounded-md border border-white/25 px-5 py-2.5 text-xs font-bold uppercase tracking-wide transition hover:border-brand-accent hover:text-brand-accent"
             >
               <Mail size={14} />

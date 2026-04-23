@@ -43,3 +43,13 @@ npm run start
 ## Integracion futura de streaming real
 
 La seccion `Ahora en Vivo` ya esta preparada visualmente para conectar un stream real (Icecast, Shoutcast o HLS) reemplazando el estado simulado del player.
+
+## Firebase + Backblaze B2
+
+- **Metadata dinamica**: `src/app/layout.tsx` usa `generateMetadata()` y lee `site/metadata` en Firestore.
+- **Proxy CORS para B2**: `src/app/api/media/[...path]/route.ts` proxya archivos de B2 y agrega headers CORS.
+- **Admin CMS**: `src/app/admin/page.tsx` usa auth anonima + PIN `1619`, guarda redes en `settings/socials` y galeria en `gallery`.
+- **Galeria publica**: carrusel en el index y pagina `src/app/gallery/page.tsx`.
+- **Helper de URLs**: `src/lib/b2.ts` incluye `getB2PublicUrl()` y `getB2ProxyUrl()`.
+
+Configura variables en `.env.local` tomando como base `.env.example`.

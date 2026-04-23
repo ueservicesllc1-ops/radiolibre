@@ -1,9 +1,11 @@
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { SectionTitle } from "@/components/section-title";
-import { newsPosts } from "@/data/radio-data";
+import { getEcuadorNews } from "@/lib/news";
 
-export function NewsSection() {
+export async function NewsSection() {
+  const newsPosts = await getEcuadorNews(3);
+
   return (
     <section id="noticias" className="bg-zinc-100 px-4 py-14">
       <div className="section-shell">
@@ -35,7 +37,9 @@ export function NewsSection() {
                 </div>
                 <h3 className="mt-3 text-sm font-bold text-brand-ink">{post.title}</h3>
                 <a
-                  href="#"
+                  href={post.url ?? "#"}
+                  target={post.url ? "_blank" : undefined}
+                  rel={post.url ? "noreferrer" : undefined}
                   className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-zinc-500 transition hover:text-brand-accent"
                 >
                   {post.date}

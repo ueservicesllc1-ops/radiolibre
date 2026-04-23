@@ -28,6 +28,8 @@ export interface NewsPost {
   category: string;
   date: string;
   image: string;
+  url?: string;
+  source?: string;
 }
 
 export interface Stat {

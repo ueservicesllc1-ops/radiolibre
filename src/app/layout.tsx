@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { getSiteMetadataFromFirebase } from "@/lib/firebase-metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -7,12 +8,14 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Radio Libre | Radio online moderna",
-  description:
-    "Radio Libre: energia, actualidad y entretenimiento en una experiencia digital premium para escuchar en vivo.",
-  keywords: ["radio online", "emisora", "musica", "noticias", "streaming en vivo"],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const metadata = await getSiteMetadataFromFirebase();
+  return {
+    title: metadata.title,
+    description: metadata.description,
+    keywords: metadata.keywords,
+  };
+}
 
 export default function RootLayout({
   children,

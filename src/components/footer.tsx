@@ -1,4 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { navLinks } from "@/data/radio-data";
+import { defaultSocialLinks, getSocialLinks } from "@/lib/cms";
+import type { SocialLinks } from "@/types/cms";
 
 function InstagramIcon() {
   return (
@@ -25,6 +30,12 @@ function YoutubeIcon() {
 }
 
 export function Footer() {
+  const [links, setLinks] = useState<SocialLinks>(defaultSocialLinks);
+
+  useEffect(() => {
+    getSocialLinks().then(setLinks).catch(() => setLinks(defaultSocialLinks));
+  }, []);
+
   return (
     <footer className="bg-black px-4 py-12 text-white">
       <div className="section-shell grid gap-8 md:grid-cols-4">
@@ -33,17 +44,32 @@ export function Footer() {
             RADIO <span className="text-brand-accent">LIBRE</span>
           </h3>
           <p className="mt-3 max-w-sm text-xs text-white/65">
-            Radio online y local con una propuesta editorial actual, entretenimiento y conexion
-            real con la audiencia.
+            Radio Libre 93.9FM en Babahoyo, Ecuador. Musica, informacion y entretenimiento para
+            toda la comunidad.
           </p>
           <div className="mt-4 flex gap-2">
-            <a href="#" className="rounded-full border border-white/20 p-2 hover:text-brand-accent">
+            <a
+              href={links.instagram}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-white/20 p-2 hover:text-brand-accent"
+            >
               <InstagramIcon />
             </a>
-            <a href="#" className="rounded-full border border-white/20 p-2 hover:text-brand-accent">
+            <a
+              href={links.facebook}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-white/20 p-2 hover:text-brand-accent"
+            >
               <XIcon />
             </a>
-            <a href="#" className="rounded-full border border-white/20 p-2 hover:text-brand-accent">
+            <a
+              href={links.youtube}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-white/20 p-2 hover:text-brand-accent"
+            >
               <YoutubeIcon />
             </a>
           </div>
@@ -70,20 +96,28 @@ export function Footer() {
           </div>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">Newsletter</p>
-          <p className="mt-4 text-xs text-white/70">Suscribete y recibe novedades.</p>
-          <div className="mt-3 flex gap-2">
-            <input
-              type="email"
-              placeholder="Tu correo"
-              className="w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs outline-none placeholder:text-white/45 focus:border-brand-accent"
-            />
-            <button
-              type="button"
-              className="rounded-md bg-brand-accent px-3 py-2 text-[10px] font-bold uppercase text-brand-night"
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">Contacto</p>
+          <div className="mt-4 grid gap-2 text-xs text-white/70">
+            <p className="text-brand-accent">Abierto ahora</p>
+            <p>Flores 0203 entre General Barona y Malecon, Babahoyo, Ecuador</p>
+            <a href={`tel:${links.phone}`} className="transition hover:text-brand-accent">
+              {links.phone}
+            </a>
+            <a
+              href="mailto:radiolibre93.9@hotmail.com"
+              className="transition hover:text-brand-accent"
             >
-              Enviar
-            </button>
+              radiolibre93.9@hotmail.com
+            </a>
+            <a
+              href="https://radiolibre939.com"
+              target="_blank"
+              rel="noreferrer"
+              className="transition hover:text-brand-accent"
+            >
+              radiolibre939.com
+            </a>
+            <p>Comunidad: Radio Libre 93.9FM</p>
           </div>
         </div>
       </div>

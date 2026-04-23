@@ -1,6 +1,5 @@
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
-import { hosts, newsPosts } from "@/data/radio-data";
+import { hosts } from "@/data/radio-data";
 
 function InstagramIcon() {
   return (
@@ -21,7 +20,7 @@ function XIcon() {
 export function TalentNewsSection() {
   return (
     <section className="bg-zinc-100 px-4 py-14">
-      <div className="section-shell grid gap-8 lg:grid-cols-2">
+      <div className="section-shell">
         <div id="locutores">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Nuestros</p>
           <h2 className="mt-2 text-4xl font-extrabold uppercase leading-none text-brand-ink">
@@ -30,7 +29,7 @@ export function TalentNewsSection() {
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {hosts.map((host) => (
               <article key={host.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-                <div className="relative h-28">
+                <div className="relative h-40">
                   <Image src={host.avatar} alt={host.name} fill className="object-cover" />
                 </div>
                 <div className="p-3">
@@ -44,31 +43,6 @@ export function TalentNewsSection() {
                       <XIcon />
                     </span>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-        <div id="noticias">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Noticias</p>
-          <h2 className="mt-2 text-4xl font-extrabold uppercase leading-none text-brand-ink">
-            Y Novedades
-          </h2>
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            {newsPosts.map((post) => (
-              <article key={post.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-                <div className="relative h-24">
-                  <Image src={post.image} alt={post.title} fill className="object-cover" />
-                </div>
-                <div className="p-3">
-                  <p className="inline-flex rounded bg-brand-accent/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-brand-night">
-                    {post.category}
-                  </p>
-                  <p className="mt-2 text-xs font-semibold text-brand-ink">{post.title}</p>
-                  <p className="mt-2 inline-flex items-center gap-1 text-[10px] text-zinc-500">
-                    {post.date}
-                    <ArrowUpRight size={12} />
-                  </p>
                 </div>
               </article>
             ))}
