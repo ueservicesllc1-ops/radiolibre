@@ -53,6 +53,10 @@ export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
+  const [newsTitle, setNewsTitle] = useState("");
+  const [newsCategory, setNewsCategory] = useState("General");
+  const [newsDate, setNewsDate] = useState(new Date().toISOString().split("T")[0]);
+  const [newsUrl, setNewsUrl] = useState("");
   const [newsPhoto, setNewsPhoto] = useState<File | null>(null);
   const [newsContent, setNewsContent] = useState("");
   const [savingNews, setSavingNews] = useState(false);
