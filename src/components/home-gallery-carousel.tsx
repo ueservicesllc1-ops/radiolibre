@@ -16,15 +16,16 @@ const fallback: GalleryImage[] = [
 
 export function HomeGalleryCarousel() {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getGalleryImages(5)
       .then((items) => setImages(items))
-      .catch(() => setImages([]));
+      .finally(() => setLoading(false));
   }, []);
 
-  const cards = useMemo(() => (images.length > 0 ? images : fallback), [images]);
+  const cards = images;
 
   return (
     <section className="bg-zinc-100 px-4 py-14">
@@ -62,17 +63,35 @@ export function HomeGalleryCarousel() {
         </div>
 
         <div ref={trackRef} className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
-          {cards.map((item) => (
-            <article
-              key={item.id}
-              className="min-w-[260px] snap-start overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:min-w-[320px]"
-            >
-              <div className="relative h-52">
-                <Image src={item.url} alt={item.title || "Foto de galeria"} fill className="object-cover" />
-              </div>
-              <p className="p-3 text-xs font-semibold text-zinc-700">{item.title || "Radio Libre 93.9FM"}</p>
-            </article>
-          ))}
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="min-w-[260px] h-64 animate-pulse rounded-xl bg-zinc-200 sm:min-w-[320px]" />
+            ))
+          ) : cards.length > 0 ? (
+            cards.map((item) => (
+              <article
+                key={item.id}
+                className="min-w-[260px] snap-start overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:min-w-[320px]"
+              >
+                <div className="relative h-52">
+                  <Image src={item.url} alt={item.title || "Foto de galeria"} fill className="object-cover" />
+                </div>
+                <p className="p-3 text-xs font-semibold text-zinc-700">{item.title || "Radio Libre 93.9FM"}</p>
+              </article>
+            ))
+          ) : (
+            fallback.map((item) => (
+              <article
+                key={item.id}
+                className="min-w-[260px] snap-start overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:min-w-[320px] opacity-40 grayscale"
+              >
+                <div className="relative h-52 bg-zinc-200">
+                  <div className="flex h-full w-full items-center justify-center text-zinc-400 text-[10px] font-bold uppercase">Logo Radio Libre</div>
+                </div>
+                <p className="p-3 text-xs font-semibold text-zinc-400">Espacio disponible</p>
+              </article>
+            ))
+          )}
         </div>
       </div>
     </section>

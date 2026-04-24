@@ -202,10 +202,7 @@ export function LivePlayer() {
           <div className="flex items-center gap-4 border-t border-white/10 p-4 md:border-l md:border-t-0">
             <div className="relative h-14 w-14 overflow-hidden rounded-lg">
               <Image
-                src={
-                  currentProgram?.photoUrl ||
-                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80"
-                }
+                src={currentProgram?.photoUrl || "/logo1.png"}
                 alt={currentProgram?.name || "En vivo"}
                 fill
                 className="object-cover"

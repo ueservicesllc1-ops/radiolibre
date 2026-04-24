@@ -34,7 +34,7 @@ function formatDate(input?: string) {
 export async function getEcuadorNews(limit = 3): Promise<NewsPost[]> {
   const apiKey = process.env.CURRENTS_API_KEY;
   if (!apiKey) {
-    return newsPosts.slice(0, limit);
+    return [];
   }
 
   const latestParams = new URLSearchParams({

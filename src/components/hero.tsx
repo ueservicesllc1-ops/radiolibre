@@ -10,13 +10,7 @@ export function Hero() {
       id="inicio"
       className="relative overflow-hidden bg-brand-night px-4 pb-32 pt-32 text-white sm:pb-36 sm:pt-36"
     >
-      <Image
-        src="https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=1800&q=80"
-        alt="Cabina de radio"
-        fill
-        priority
-        className="object-cover object-[center_65%]"
-      />
+      <div className="absolute inset-0 bg-[#0a0a0a]" />
       <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,199,0,0.28),transparent_40%)]" />
       <div className="pointer-events-none absolute inset-0">
