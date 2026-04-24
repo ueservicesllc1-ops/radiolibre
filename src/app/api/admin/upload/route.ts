@@ -36,22 +36,35 @@ export async function POST(request: Request) {
     return Response.json({ error: "Archivo invalido" }, { status: 400 });
   }
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
-  const key = `gallery/${randomUUID()}-${sanitizeName(file.name.replace(/\.[^/.]+$/, ""))}.${ext}`;
+  const folderRaw = formData.get("folder");
+  const folderStr = typeof folderRaw === "string" ? folderRaw.toLowerCase() : "";
+  const folder = ["programming", "news", "gallery"].includes(folderStr) ? folderStr : "gallery";
 
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type || "application/octet-stream",
-    }),
-  );
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
+    const key = `${folder}/${randomUUID()}-${sanitizeName(file.name.replace(/\.[^/.]+$/, ""))}.${ext}`;
 
-  return Response.json({
-    path: key,
-    url: getB2ProxyUrl(key),
-  });
+    console.log(`[B2 Upload] Iniciando subida a ${key}...`);
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type || "application/octet-stream",
+      }),
+    );
+
+    console.log(`[B2 Upload] Subida exitosa: ${key}`);
+
+    return Response.json({
+      path: key,
+      url: getB2ProxyUrl(key),
+    });
+  } catch (error: any) {
+    console.error("[B2 Upload Error]", error);
+    return Response.json({ error: error.message || "Error en S3" }, { status: 500 });
+  }
 }

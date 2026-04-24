@@ -1,4 +1,5 @@
 import { AboutSection } from "@/components/about-section";
+import { ManualNewsSection } from "@/components/manual-news-section";
 import { CTASection } from "@/components/cta-section";
 import { Footer } from "@/components/footer";
 import { HomeGalleryCarousel } from "@/components/home-gallery-carousel";
@@ -18,6 +19,7 @@ export default function Home() {
         <Hero />
         <LivePlayer />
         <AboutSection />
+        <ManualNewsSection />
         <ProgrammingSection />
         <TalentNewsSection />
         <NewsSection />

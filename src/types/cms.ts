@@ -28,8 +28,34 @@ export type ProgrammingDayGroup =
 export interface ProgrammingItem {
   id: string;
   name: string;
-  host: string;
+  /** Locutor (opcional) */
+  host?: string;
+  /** HH:mm */
   start: string;
+  /** HH:mm */
   end: string;
-  dayGroup: ProgrammingDayGroup;
+  /** YYYY-MM-DD vigencia inicio (opcional; si no hay fechas se usa dayGroup) */
+  dateFrom?: string;
+  /** YYYY-MM-DD vigencia fin inclusive (opcional) */
+  dateTo?: string;
+  /** Imagen del programa (URL proxy B2 o absoluta) */
+  photoUrl?: string;
+  /** Categoria (ej. ACTUALIDAD, MAGAZINE) */
+  category?: string;
+  /** Breve descripcion */
+  description?: string;
+  /** Slot de tiempo (Manana, Tarde, Noche) */
+  slot?: "Manana" | "Tarde" | "Noche";
+  /** Si no hay dateFrom/dateTo, filtra por dia de semana */
+  dayGroup?: ProgrammingDayGroup;
+}
+export interface ManualNewsItem {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  imageUrl?: string;
+  content?: string;
+  url?: string;
+  createdAt: number;
 }

@@ -1,7 +1,9 @@
 "use client";
 
+import type { GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -12,7 +14,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { firebaseDb } from "@/lib/firebase-client";
-import type { GalleryImage, ProgrammingItem, SocialLinks } from "@/types/cms";
 
 export const defaultSocialLinks: SocialLinks = {
   facebook: "https://www.facebook.com/",
@@ -95,16 +96,75 @@ export const defaultProgramming: ProgrammingItem[] = [
   },
 ];
 
+function normalizeProgrammingItem(item: ProgrammingItem): ProgrammingItem {
+  return {
+    ...item,
+    host: item.host ?? "",
+    category: item.category ?? "General",
+    description: item.description ?? "",
+    slot: item.slot ?? "Manana",
+    dayGroup: item.dayGroup ?? "everyday",
+  };
+}
+
 export async function getProgramming(): Promise<ProgrammingItem[]> {
-  if (!firebaseDb) return defaultProgramming;
+  if (!firebaseDb) return defaultProgramming.map(normalizeProgrammingItem);
   const snap = await getDoc(doc(firebaseDb, "settings", "programming"));
-  if (!snap.exists()) return defaultProgramming;
+  if (!snap.exists()) return defaultProgramming.map(normalizeProgrammingItem);
   const data = snap.data() as { items?: ProgrammingItem[] };
-  if (!Array.isArray(data.items) || data.items.length === 0) return defaultProgramming;
-  return data.items;
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    return defaultProgramming.map(normalizeProgrammingItem);
+  }
+  return data.items.map(normalizeProgrammingItem);
 }
 
 export async function saveProgramming(items: ProgrammingItem[]) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
-  await setDoc(doc(firebaseDb, "settings", "programming"), { items }, { merge: true });
+  const cleanItems = items.map(item => 
+    Object.fromEntries(Object.entries(item).filter(([_, v]) => v !== undefined))
+  );
+  await setDoc(doc(firebaseDb, "settings", "programming"), { items: cleanItems }, { merge: true });
+}
+
+export async function getManualNews(max?: number): Promise<ManualNewsItem[]> {
+  if (!firebaseDb) return [];
+  const baseRef = collection(firebaseDb, "news");
+  const newsQuery =
+    typeof max === "number"
+      ? query(baseRef, orderBy("createdAt", "desc"), limit(max))
+      : query(baseRef, orderBy("createdAt", "desc"));
+  const snap = await getDocs(newsQuery);
+  return snap.docs.map((item) => {
+    const data = item.data();
+    return {
+      id: item.id,
+      title: String(data.title || ""),
+      category: String(data.category || ""),
+      date: String(data.date || ""),
+      imageUrl: data.imageUrl ? String(data.imageUrl) : undefined,
+      content: data.content ? String(data.content) : undefined,
+      url: data.url ? String(data.url) : undefined,
+      createdAt: Number(data.createdAt || Date.now()),
+    };
+  });
+}
+
+export async function addManualNews(payload: Omit<ManualNewsItem, "id" | "createdAt">) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const id = crypto.randomUUID();
+  
+  // Limpiar campos undefined para que Firebase no se queje
+  const cleanPayload = Object.fromEntries(
+    Object.entries(payload).filter(([_, v]) => v !== undefined)
+  );
+
+  await setDoc(doc(firebaseDb, "news", id), {
+    ...cleanPayload,
+    createdAt: Date.now(),
+  });
+}
+
+export async function deleteManualNews(id: string) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  await deleteDoc(doc(firebaseDb, "news", id));
 }

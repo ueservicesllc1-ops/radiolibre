@@ -39,6 +39,22 @@ export function LivePlayer() {
     return map[dayGroup] === day;
   }
 
+  function todayYmdGuayaquil() {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Guayaquil",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  }
+
+  function inDateRange(today: string, from?: string, to?: string) {
+    if (!from && !to) return true;
+    if (from && today < from) return false;
+    if (to && today > to) return false;
+    return true;
+  }
+
   function getProgramForNow(items: ProgrammingItem[]) {
     const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -63,10 +79,15 @@ export function LivePlayer() {
     };
     const currentMinutes = hour * 60 + minute;
     const currentDay = dayMap[weekday] ?? 0;
+    const todayStr = todayYmdGuayaquil();
 
     return (
       items.find((item) => {
-        if (!dayMatches(item.dayGroup, currentDay)) return false;
+        if (item.dateFrom || item.dateTo) {
+          if (!inDateRange(todayStr, item.dateFrom, item.dateTo)) return false;
+        } else if (!dayMatches(item.dayGroup || "everyday", currentDay)) {
+          return false;
+        }
         const start = parseMinutes(item.start);
         const end = parseMinutes(item.end);
         return currentMinutes >= start && currentMinutes < end;
@@ -166,7 +187,9 @@ export function LivePlayer() {
                 {currentProgram?.name || "Radio Libre 93.9 FM"}
               </h3>
               <p className="mt-1 text-sm text-white/75">
-                {currentProgram?.host || "Transmision en vivo"}
+                {currentProgram?.host?.trim()
+                  ? currentProgram.host
+                  : "Transmision en vivo"}
               </p>
               {currentProgram && (
                 <p className="mt-1 text-xs font-semibold text-brand-accent">
@@ -179,10 +202,14 @@ export function LivePlayer() {
           <div className="flex items-center gap-4 border-t border-white/10 p-4 md:border-l md:border-t-0">
             <div className="relative h-14 w-14 overflow-hidden rounded-lg">
               <Image
-                src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80"
-                alt="Locutor en vivo"
+                src={
+                  currentProgram?.photoUrl ||
+                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80"
+                }
+                alt={currentProgram?.name || "En vivo"}
                 fill
                 className="object-cover"
+                unoptimized={Boolean(currentProgram?.photoUrl?.startsWith("/"))}
               />
             </div>
             <div className="flex-1">
