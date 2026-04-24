@@ -25,14 +25,16 @@ export function Hero() {
           transition={{ duration: 0.5 }}
           className="max-w-xl -translate-x-[40px] translate-y-10"
         >
-          <Image
-            src="/logo2.png"
-            alt="Logo Radio Libre"
-            width={560}
-            height={560}
-            unoptimized
-            className="-mt-8 relative -top-3 mx-auto mb-3 h-64 w-64 -translate-x-[80px] bg-transparent object-contain sm:h-72 sm:w-72"
-          />
+          <a href="/" className="inline-block transition hover:scale-105">
+            <Image
+              src="/logo2.png"
+              alt="Logo Radio Libre"
+              width={560}
+              height={560}
+              unoptimized
+              className="-mt-8 relative -top-3 mx-auto mb-3 h-64 w-64 -translate-x-[80px] bg-transparent object-contain sm:h-72 sm:w-72"
+            />
+          </a>
           <h1 className="text-balance text-4xl font-extrabold uppercase leading-[0.95] sm:text-5xl lg:text-6xl">
             La radio de <span className="text-brand-accent">LA VERDAD</span>
           </h1>

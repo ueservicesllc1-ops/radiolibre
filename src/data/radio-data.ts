@@ -1,7 +1,7 @@
 import type { Host, NewsPost, Program, Stat } from "@/types/radio";
 
 export const navLinks = [
-  { label: "Inicio", href: "#inicio" },
+  { label: "Inicio", href: "/" },
   { label: "En Vivo", href: "#en-vivo" },
   { label: "Programacion", href: "#programacion" },
   { label: "Locutores", href: "#locutores" },

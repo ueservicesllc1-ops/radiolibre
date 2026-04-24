@@ -27,7 +27,7 @@ export function Navbar() {
         className="w-full border-b backdrop-blur-md"
       >
         <div className="section-shell flex items-center justify-between px-4 py-3">
-          <a href="#inicio" className="flex items-center gap-2.5 text-white">
+          <a href="/" className="flex items-center gap-2.5 text-white">
             <span className="rounded-full bg-brand-accent/15 p-1.5 text-brand-accent">
               <Radio size={18} />
             </span>

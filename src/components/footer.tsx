@@ -40,9 +40,9 @@ export function Footer() {
     <footer className="bg-black px-4 py-12 text-white">
       <div className="section-shell grid gap-8 md:grid-cols-4">
         <div>
-          <h3 className="text-2xl font-extrabold">
+          <a href="/" className="text-2xl font-extrabold hover:text-brand-accent transition">
             RADIO <span className="text-brand-accent">LIBRE</span>
-          </h3>
+          </a>
           <p className="mt-3 max-w-sm text-xs text-white/65">
             Radio Libre 93.9FM en Babahoyo, Ecuador. Musica, informacion y entretenimiento para
             toda la comunidad.
