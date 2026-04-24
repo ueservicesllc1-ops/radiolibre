@@ -4,7 +4,7 @@ import { SectionTitle } from "@/components/section-title";
 import { getEcuadorNews } from "@/lib/news";
 
 export async function NewsSection() {
-  const newsPosts = await getEcuadorNews(3);
+  const newsPosts = await getEcuadorNews(4);
 
   return (
     <section id="noticias" className="bg-zinc-100 px-4 py-14">
@@ -15,13 +15,13 @@ export async function NewsSection() {
           description="Cobertura actual y lanzamientos destacados."
         />
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {newsPosts.map((post) => (
             <article
               key={post.id}
               className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:border-brand-accent/45"
             >
-              <div className="relative h-52 overflow-hidden">
+              <div className="relative h-64 overflow-hidden">
                 <Image
                   src={post.image}
                   alt={post.title}
