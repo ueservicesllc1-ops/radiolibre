@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { signInAnonymously } from "firebase/auth";
 import {
   addGalleryImage,
+  getGalleryImages,
   defaultProgramming,
   defaultSocialLinks,
   getProgramming,
@@ -103,7 +104,15 @@ export default function AdminPage() {
     getManualNews().then(setNews).catch(() => setNews([]));
     getAccountability().then(setAccItems).catch(() => setAccItems([]));
     getLocutores().then(setLocutores).catch(() => setLocutores([]));
+    getGalleryImages().then(setGalleryImages).catch(() => setGalleryImages([]));
   }, [unlocked]);
+
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+
+  async function refreshGallery() {
+    const items = await getGalleryImages().catch(() => []);
+    setGalleryImages(items);
+  }
 
   function resetProgramForm() {
     setProgName("");
@@ -306,6 +315,7 @@ export default function AdminPage() {
       setCaption("");
       setFile(null);
       setSuccess("Foto subida y guardada en Firestore");
+      await refreshGallery();
     } catch {
       setError("No se pudo subir la imagen");
     } finally {
@@ -531,6 +541,34 @@ export default function AdminPage() {
                   {uploading ? "Subiendo..." : "Subir foto"}
                 </button>
               </form>
+
+              <div className="mt-10">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Fotos en galeria ({galleryImages.length})
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {galleryImages.map((img) => (
+                    <div key={img.id} className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm">
+                      <div className="relative aspect-square overflow-hidden rounded-lg">
+                        <Image src={img.url} alt="" fill className="object-cover" unoptimized />
+                      </div>
+                      <p className="mt-2 text-xs font-bold text-zinc-700 truncate px-1">{img.title || "Sin titulo"}</p>
+                      <button
+                        onClick={async () => {
+                          if (confirm("¿Eliminar foto de la galeria?")) {
+                            // Note: This would need a deleteGalleryImage function in lib/cms.ts
+                            // For now, let's assume we'll add it or just inform the user.
+                            alert("Función de eliminar galería no implementada aún en lib/cms.ts");
+                          }
+                        }}
+                        className="absolute top-3 right-3 rounded-full bg-red-600 p-1.5 text-white opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <span className="text-[10px]">🗑️</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

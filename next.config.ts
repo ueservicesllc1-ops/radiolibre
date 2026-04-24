@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "www.infobae.com" },
       { protocol: "https", hostname: "static.dw.com" },
+      { protocol: "https", hostname: "www.lanacion.com.ar" },
+      { protocol: "https", hostname: "www.clarin.com" },
     ],
   },
 };
