@@ -21,7 +21,7 @@ export async function NewsSection() {
               key={post.id}
               className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:border-brand-accent/45"
             >
-              <div className="relative h-28 overflow-hidden">
+              <div className="relative h-52 overflow-hidden">
                 <Image
                   src={post.image}
                   alt={post.title}
