@@ -1,4 +1,6 @@
 "use client";
+// v1.1.0 - Real-time chat with persistence
+
 
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, User } from "lucide-react";
