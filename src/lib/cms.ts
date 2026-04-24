@@ -1,6 +1,6 @@
 "use client";
 
-import type { AccountabilityItem, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
+import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor } from "@/types/cms";
 import {
   collection,
   deleteDoc,
@@ -211,4 +211,36 @@ export async function updateAccountability(id: string, payload: Partial<Accounta
 export async function deleteAccountability(id: string) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
   await deleteDoc(doc(firebaseDb, "accountability", id));
+}
+
+// Locutores
+export async function getLocutores(): Promise<Locutor[]> {
+  if (!firebaseDb) return [];
+  const baseRef = collection(firebaseDb, "locutores");
+  const q = query(baseRef, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((item) => ({
+    id: item.id,
+    ...(item.data() as any),
+  }));
+}
+
+export async function addLocutor(data: Omit<Locutor, "id" | "createdAt">) {
+  if (!firebaseDb) return;
+  const col = collection(firebaseDb, "locutores");
+  await setDoc(doc(col), {
+    ...data,
+    createdAt: Date.now(),
+  });
+}
+
+export async function updateLocutor(id: string, data: Partial<Locutor>) {
+  if (!firebaseDb) return;
+  const ref = doc(firebaseDb, "locutores", id);
+  await updateDoc(ref, cleanPayload(data));
+}
+
+export async function deleteLocutor(id: string) {
+  if (!firebaseDb) return;
+  await deleteDoc(doc(firebaseDb, "locutores", id));
 }

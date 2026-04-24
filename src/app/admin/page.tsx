@@ -18,12 +18,16 @@ import {
   addAccountability,
   updateAccountability,
   deleteAccountability,
+  getLocutores,
+  addLocutor,
+  updateLocutor,
+  deleteLocutor,
 } from "@/lib/cms";
 import { firebaseAuth } from "@/lib/firebase-client";
-import type { AccountabilityFile, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
+import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
-type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability";
+type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores";
 
 export default function AdminPage() {
   const firebaseMissing = !firebaseAuth;
@@ -71,6 +75,14 @@ export default function AdminPage() {
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [savingAcc, setSavingAcc] = useState(false);
   const [showAccForm, setShowAccForm] = useState(false);
+  
+  const [locutores, setLocutores] = useState<Locutor[]>([]);
+  const [showLocForm, setShowLocForm] = useState(false);
+  const [locName, setLocName] = useState("");
+  const [locProgram, setLocProgram] = useState("");
+  const [locSchedule, setLocSchedule] = useState("");
+  const [locPhoto, setLocPhoto] = useState<File | null>(null);
+  const [savingLoc, setSavingLoc] = useState(false);
 
   useEffect(() => {
     if (!firebaseAuth) return;
@@ -90,6 +102,7 @@ export default function AdminPage() {
     getProgramming().then(setProgramming).catch(() => setProgramming(defaultProgramming));
     getManualNews().then(setNews).catch(() => setNews([]));
     getAccountability().then(setAccItems).catch(() => setAccItems([]));
+    getLocutores().then(setLocutores).catch(() => setLocutores([]));
   }, [unlocked]);
 
   function resetProgramForm() {
@@ -116,6 +129,13 @@ export default function AdminPage() {
     setEditingAccId(null);
   }
 
+  function resetLocForm() {
+    setLocName("");
+    setLocProgram("");
+    setLocSchedule("");
+    setLocPhoto(null);
+  }
+
   async function refreshProgramming() {
     const items = await getProgramming().catch(() => defaultProgramming);
     setProgramming(items);
@@ -124,6 +144,11 @@ export default function AdminPage() {
   async function refreshNews() {
     const items = await getManualNews().catch(() => []);
     setNews(items);
+  }
+
+  async function refreshLocutores() {
+    const items = await getLocutores().catch(() => []);
+    setLocutores(items);
   }
 
   async function onSaveNewProgram(event: FormEvent) {
@@ -393,6 +418,17 @@ export default function AdminPage() {
             >
               Rendicion de cuentas
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("locutores")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "locutores"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Locutores
+            </button>
           </div>
         </aside>
 
@@ -421,6 +457,11 @@ export default function AdminPage() {
                   <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
                   <p className="mt-2 text-sm font-bold text-zinc-800">Rendicion de cuentas</p>
                   <p className="mt-1 text-xs text-zinc-600">Sube informes anuales obligatorios (PDF).</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 p-4">
+                  <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
+                  <p className="mt-2 text-sm font-bold text-zinc-800">Locutores</p>
+                  <p className="mt-1 text-xs text-zinc-600">Sube fotos y datos de los locutores de la radio.</p>
                 </div>
               </div>
             </div>
@@ -1242,6 +1283,147 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {activeSection === "locutores" && (
+            <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-extrabold text-brand-ink">Locutores</h2>
+                  <p className="mt-1 text-sm text-zinc-600">
+                    Gestiona los locutores que aparecen en la landing page.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    resetLocForm();
+                    setShowLocForm((open) => !open);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-4 py-2 text-sm font-bold text-brand-night transition hover:bg-brand-accent-soft"
+                >
+                  <span className="text-lg leading-none">{showLocForm ? "×" : "+"}</span>
+                  {showLocForm ? "Cerrar" : "Añadir locutor"}
+                </button>
+              </div>
+
+              {showLocForm && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!locName.trim() || !locPhoto) {
+                      setError("Nombre y foto son obligatorios");
+                      return;
+                    }
+                    setSavingLoc(true);
+                    setError("");
+                    try {
+                      const formData = new FormData();
+                      formData.append("file", locPhoto);
+                      formData.append("folder", "locutores");
+                      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                      if (!res.ok) throw new Error("Error subiendo foto");
+                      const data = await res.json();
+
+                      await addLocutor({
+                        name: locName.trim(),
+                        program: locProgram.trim(),
+                        schedule: locSchedule.trim(),
+                        imageUrl: data.url,
+                      });
+
+                      await refreshLocutores();
+                      resetLocForm();
+                      setShowLocForm(false);
+                      setSuccess("Locutor añadido con éxito");
+                    } catch (err: any) {
+                      setError("Error: " + err.message);
+                    } finally {
+                      setSavingLoc(false);
+                    }
+                  }}
+                  className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Nombre</label>
+                      <input
+                        value={locName}
+                        onChange={(e) => setLocName(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        placeholder="Nombre del locutor"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Programa</label>
+                      <input
+                        value={locProgram}
+                        onChange={(e) => setLocProgram(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        placeholder="Nombre del programa"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Horario</label>
+                      <input
+                        value={locSchedule}
+                        onChange={(e) => setLocSchedule(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        placeholder="Ej: Lunes a Viernes 08:00 - 10:00"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Foto</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setLocPhoto(e.target.files?.[0] ?? null)}
+                        className="w-full text-xs"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingLoc}
+                    className="mt-4 w-full rounded-lg bg-brand-night py-2 text-sm font-bold text-brand-accent transition hover:bg-brand-ink disabled:opacity-50"
+                  >
+                    {savingLoc ? "Guardando..." : "Guardar Locutor"}
+                  </button>
+                </form>
+              )}
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {locutores.map((loc) => (
+                  <div key={loc.id} className="relative group overflow-hidden bg-white rounded-2xl border border-zinc-200 shadow-sm">
+                    <div className="aspect-square relative overflow-hidden">
+                      <Image
+                        src={loc.imageUrl}
+                        alt={loc.name}
+                        fill
+                        className="object-cover transition duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="text-brand-accent text-[10px] font-black uppercase tracking-widest">{loc.program}</p>
+                        <h3 className="text-white font-black text-lg leading-tight">{loc.name}</h3>
+                        <p className="text-white/60 text-[10px] font-bold mt-1">{loc.schedule}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        if (confirm("¿Eliminar locutor?")) {
+                          await deleteLocutor(loc.id);
+                          await refreshLocutores();
+                        }
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <span className="text-xs">🗑️</span>
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

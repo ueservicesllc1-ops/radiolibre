@@ -74,3 +74,12 @@ export interface AccountabilityItem {
   files: AccountabilityFile[];
   createdAt: number;
 }
+
+export interface Locutor {
+  id: string;
+  name: string;
+  program: string;
+  schedule: string;
+  imageUrl: string;
+  createdAt: number;
+}
