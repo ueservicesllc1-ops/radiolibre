@@ -29,8 +29,9 @@ import {
   getChatSessions,
   sendChatMessage,
 } from "@/lib/cms";
-import { firebaseAuth } from "@/lib/firebase-client";
-import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage } from "@/types/cms";
+import { firebaseAuth, firebaseDb } from "@/lib/firebase-client";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
 type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats";
