@@ -1,6 +1,6 @@
 "use client";
 
-import type { GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
+import type { AccountabilityItem, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
 import {
   collection,
   deleteDoc,

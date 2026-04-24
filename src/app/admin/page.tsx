@@ -20,7 +20,7 @@ import {
   deleteAccountability,
 } from "@/lib/cms";
 import { firebaseAuth } from "@/lib/firebase-client";
-import type { ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
+import type { AccountabilityFile, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
 type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability";
