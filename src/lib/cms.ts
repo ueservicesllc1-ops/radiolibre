@@ -1,6 +1,6 @@
 "use client";
 
-import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor } from "@/types/cms";
+import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage } from "@/types/cms";
 import {
   collection,
   deleteDoc,
@@ -243,4 +243,44 @@ export async function updateLocutor(id: string, data: Partial<Locutor>) {
 export async function deleteLocutor(id: string) {
   if (!firebaseDb) return;
   await deleteDoc(doc(firebaseDb, "locutores", id));
+}
+
+// Contact Messages
+export async function saveContactMessage(payload: Omit<ContactMessage, "id" | "createdAt">) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const id = crypto.randomUUID();
+  await setDoc(doc(firebaseDb, "messages", id), {
+    ...payload,
+    createdAt: Date.now(),
+    read: false,
+  });
+}
+
+export async function getContactMessages(): Promise<ContactMessage[]> {
+  if (!firebaseDb) return [];
+  const baseRef = collection(firebaseDb, "messages");
+  const q = query(baseRef, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((item) => {
+    const data = item.data();
+    return {
+      id: item.id,
+      name: String(data.name || ""),
+      email: String(data.email || ""),
+      subject: String(data.subject || ""),
+      message: String(data.message || ""),
+      createdAt: Number(data.createdAt || Date.now()),
+      read: Boolean(data.read),
+    };
+  });
+}
+
+export async function markMessageAsRead(id: string) {
+  if (!firebaseDb) return;
+  await updateDoc(doc(firebaseDb, "messages", id), { read: true });
+}
+
+export async function deleteMessage(id: string) {
+  if (!firebaseDb) return;
+  await deleteDoc(doc(firebaseDb, "messages", id));
 }

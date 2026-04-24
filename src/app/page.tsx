@@ -10,6 +10,7 @@ import { NewsSection } from "@/components/news-section";
 import { ProgrammingSection } from "@/components/programming-section";
 import { StatsSection } from "@/components/stats-section";
 import { TalentNewsSection } from "@/components/talent-news-section";
+import { ContactSection } from "@/components/contact-section";
 
 export default function Home() {
   return (
@@ -26,6 +27,7 @@ export default function Home() {
         <HomeGalleryCarousel />
         <StatsSection />
         <CTASection />
+        <ContactSection />
       </main>
       <Footer />
     </>

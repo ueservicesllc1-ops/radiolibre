@@ -6,6 +6,16 @@ export interface SocialLinks {
   phone: string;
 }
 
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: number;
+  read?: boolean;
+}
+
 export interface GalleryImage {
   id: string;
   url: string;

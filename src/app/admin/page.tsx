@@ -23,12 +23,15 @@ import {
   addLocutor,
   updateLocutor,
   deleteLocutor,
+  getContactMessages,
+  markMessageAsRead,
+  deleteMessage,
 } from "@/lib/cms";
 import { firebaseAuth } from "@/lib/firebase-client";
-import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
+import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
-type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores";
+type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages";
 
 export default function AdminPage() {
   const firebaseMissing = !firebaseAuth;
@@ -105,9 +108,16 @@ export default function AdminPage() {
     getAccountability().then(setAccItems).catch(() => setAccItems([]));
     getLocutores().then(setLocutores).catch(() => setLocutores([]));
     getGalleryImages().then(setGalleryImages).catch(() => setGalleryImages([]));
+    getContactMessages().then(setMessages).catch(() => setMessages([]));
   }, [unlocked]);
 
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+
+  async function refreshMessages() {
+    const items = await getContactMessages().catch(() => []);
+    setMessages(items);
+  }
 
   async function refreshGallery() {
     const items = await getGalleryImages().catch(() => []);
@@ -439,6 +449,17 @@ export default function AdminPage() {
             >
               Locutores
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("messages")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "messages"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Mensajes
+            </button>
           </div>
         </aside>
 
@@ -472,6 +493,11 @@ export default function AdminPage() {
                   <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
                   <p className="mt-2 text-sm font-bold text-zinc-800">Locutores</p>
                   <p className="mt-1 text-xs text-zinc-600">Sube fotos y datos de los locutores de la radio.</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 p-4">
+                  <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
+                  <p className="mt-2 text-sm font-bold text-zinc-800">Mensajes</p>
+                  <p className="mt-1 text-xs text-zinc-600">Revisa los mensajes enviados por los oyentes.</p>
                 </div>
               </div>
             </div>
@@ -568,6 +594,64 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "messages" && (
+            <div>
+              <h2 className="text-xl font-extrabold text-brand-ink">Mensajes de Contacto</h2>
+              <p className="mt-1 text-sm text-zinc-600">Mensajes recibidos desde el formulario de la landing.</p>
+
+              <div className="mt-8 space-y-4">
+                {messages.length === 0 && (
+                  <p className="text-sm text-zinc-500 italic">No hay mensajes aún.</p>
+                )}
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`rounded-2xl border p-6 transition shadow-sm ${msg.read ? 'bg-white border-zinc-100 opacity-75' : 'bg-white border-brand-accent shadow-brand-accent/5'}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-bold text-brand-ink">{msg.name}</h3>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded">
+                            {new Date(msg.createdAt).toLocaleDateString()}
+                          </span>
+                          {!msg.read && (
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-white bg-brand-accent px-2 py-0.5 rounded">
+                              Nuevo
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-bold text-zinc-500 mb-4">{msg.email} • <span className="text-brand-ink">{msg.subject}</span></p>
+                        <p className="text-sm text-zinc-700 whitespace-pre-wrap bg-zinc-50 p-4 rounded-xl border border-zinc-100">{msg.message}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {!msg.read && (
+                          <button
+                            onClick={async () => {
+                              await markMessageAsRead(msg.id);
+                              await refreshMessages();
+                            }}
+                            className="rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-bold text-brand-night hover:bg-brand-accent-soft"
+                          >
+                            Leído
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (confirm("¿Eliminar este mensaje?")) {
+                              await deleteMessage(msg.id);
+                              await refreshMessages();
+                            }
+                          }}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
