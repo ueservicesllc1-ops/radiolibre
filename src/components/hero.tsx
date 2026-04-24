@@ -15,13 +15,12 @@ export function Hero() {
         alt="Cabina de radio"
         fill
         priority
-        className="object-cover object-[center_65%] opacity-40"
+        className="object-cover object-[center_65%]"
       />
-      <div className="absolute inset-0 bg-[#0a0a0a]/60" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,199,0,0.28),transparent_40%)]" />
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-brand-night to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-brand-night/80 to-transparent" />
       </div>
 
       <div className="section-shell relative grid items-center gap-14">
