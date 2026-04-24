@@ -7,7 +7,7 @@ export function StatsSection() {
   return (
     <section className="relative overflow-hidden bg-black px-4 py-8 text-white">
       <div className="pointer-events-none absolute inset-0 soft-grid opacity-20" />
-      <div className="section-shell relative grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="section-shell relative grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((item, index) => (
           <motion.article
             key={item.id}
