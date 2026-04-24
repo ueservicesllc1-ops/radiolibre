@@ -30,7 +30,7 @@ import {
   sendChatMessage,
 } from "@/lib/cms";
 import { firebaseAuth, firebaseDb } from "@/lib/firebase-client";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
