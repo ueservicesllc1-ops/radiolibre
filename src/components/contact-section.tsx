@@ -83,8 +83,8 @@ export function ContactSection() {
 
           {/* Form Side */}
           <div className="relative">
-            <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 space-y-5">
-              <div className="grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Nombre</label>
                   <input

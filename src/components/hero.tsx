@@ -23,46 +23,45 @@ export function Hero() {
         <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-brand-night/80 to-transparent" />
       </div>
 
-      <div className="section-shell relative grid items-center gap-14">
+      <div className="section-shell relative grid items-center">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="max-w-xl -translate-x-[40px] translate-y-10"
+          className="max-w-xl text-center md:text-left"
         >
-          <a href="/" className="inline-block transition hover:scale-105">
+          <a href="/" className="inline-block transition hover:scale-105 mb-6">
             <Image
               src="/logo2.png"
               alt="Logo Radio Libre"
               width={560}
               height={560}
               unoptimized
-              className="-mt-8 relative -top-3 mx-auto mb-3 h-64 w-64 -translate-x-[80px] bg-transparent object-contain sm:h-72 sm:w-72"
+              className="mx-auto md:mx-0 h-48 w-48 sm:h-56 sm:w-56 bg-transparent object-contain"
             />
           </a>
-          <h1 className="text-balance text-4xl font-extrabold uppercase leading-[0.95] sm:text-5xl lg:text-6xl">
+          <h1 className="text-balance text-4xl font-extrabold uppercase leading-[0.95] sm:text-5xl lg:text-7xl">
             La radio de <span className="text-brand-accent">LA VERDAD</span>
           </h1>
-          <p className="mt-4 max-w-none whitespace-nowrap text-sm leading-snug text-white/85 sm:text-base">
-            Musica, informacion y entretenimiento las 24 horas del dia.
+          <p className="mt-6 max-w-lg mx-auto md:mx-0 text-base leading-relaxed text-white/90 sm:text-lg">
+            Musica, informacion y entretenimiento las 24 horas del dia desde Babahoyo para el mundo.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-10 flex flex-wrap justify-center md:justify-start gap-4">
             <a
               href="#en-vivo"
-              className="rounded-md bg-brand-accent px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide text-brand-night transition hover:bg-brand-accent-soft"
+              className="rounded-full bg-brand-accent px-8 py-4 text-xs font-black uppercase tracking-widest text-brand-night transition hover:bg-brand-accent-soft hover:scale-105 active:scale-95"
             >
               Escuchar en Vivo
             </a>
             <a
               href="#programacion"
-              className="rounded-md border border-white/35 bg-black/35 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition hover:border-brand-accent hover:text-brand-accent"
+              className="rounded-full border-2 border-white/20 bg-white/5 backdrop-blur-sm px-8 py-4 text-xs font-black uppercase tracking-widest transition hover:border-brand-accent hover:text-brand-accent hover:scale-105 active:scale-95"
             >
               Ver Programacion
             </a>
           </div>
         </motion.div>
-
       </div>
       <SocialHeroButtons />
     </section>

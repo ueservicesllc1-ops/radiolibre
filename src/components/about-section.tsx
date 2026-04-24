@@ -22,7 +22,7 @@ export function AboutSection() {
               Conoce mas sobre nosotros
             </a>
           </div>
-          <div className="grid gap-0 border border-zinc-200 lg:grid-cols-4">
+          <div className="grid grid-cols-2 border border-zinc-200 lg:grid-cols-4">
           {valueCards.map((card, index) => {
             const Icon = icons[index];
             return (
