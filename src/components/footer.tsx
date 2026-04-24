@@ -133,7 +133,17 @@ export function Footer() {
       <div className="section-shell mt-8 border-t border-white/10 pt-5 text-[10px] text-white/45 flex flex-wrap justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span>© {new Date().getFullYear()} Radio Libre. Todos los derechos reservados.</span>
-          <span className="opacity-75">Developed and Powered by Freedom Labs</span>
+          <span className="opacity-75">
+            Developed and Powered by{" "}
+            <a
+              href="https://freedomlabs.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-brand-accent transition"
+            >
+              Freedom Labs
+            </a>
+          </span>
         </div>
         <div className="flex gap-4">
           <a href="/terminos" className="hover:text-brand-accent transition">Términos y Condiciones</a>
