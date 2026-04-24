@@ -124,8 +124,12 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <div className="section-shell mt-8 border-t border-white/10 pt-5 text-[10px] text-white/45">
-        © {new Date().getFullYear()} Radio Libre. Todos los derechos reservados.
+      <div className="section-shell mt-8 border-t border-white/10 pt-5 text-[10px] text-white/45 flex flex-wrap justify-between gap-4">
+        <span>© {new Date().getFullYear()} Radio Libre. Todos los derechos reservados.</span>
+        <div className="flex gap-4">
+          <a href="/terminos" className="hover:text-brand-accent transition">Términos y Condiciones</a>
+          <a href="/politica" className="hover:text-brand-accent transition">Política de Privacidad</a>
+        </div>
       </div>
     </footer>
   );
