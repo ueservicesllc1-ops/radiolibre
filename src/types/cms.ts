@@ -59,3 +59,18 @@ export interface ManualNewsItem {
   url?: string;
   createdAt: number;
 }
+
+export interface AccountabilityFile {
+  name: string;
+  url: string;
+}
+
+export interface AccountabilityItem {
+  id: string;
+  year: string;
+  phase: number; // 0, 1, 2, 3
+  title: string; // Titulo de la seccion/entrada
+  description?: string;
+  files: AccountabilityFile[];
+  createdAt: number;
+}

@@ -11,6 +11,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
   Timestamp,
 } from "firebase/firestore";
 import { firebaseDb } from "@/lib/firebase-client";
@@ -40,6 +41,12 @@ export async function getSocialLinks(): Promise<SocialLinks> {
 export async function saveSocialLinks(payload: SocialLinks) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
   await setDoc(doc(firebaseDb, "settings", "socials"), payload, { merge: true });
+}
+
+export function cleanPayload<T extends object>(payload: T): T {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([_, v]) => v !== undefined)
+  ) as T;
 }
 
 function mapGallery(docId: string, data: Record<string, unknown>): GalleryImage {
@@ -153,13 +160,10 @@ export async function addManualNews(payload: Omit<ManualNewsItem, "id" | "create
   if (!firebaseDb) throw new Error("Firebase no configurado");
   const id = crypto.randomUUID();
   
-  // Limpiar campos undefined para que Firebase no se queje
-  const cleanPayload = Object.fromEntries(
-    Object.entries(payload).filter(([_, v]) => v !== undefined)
-  );
+  const cleaned = cleanPayload(payload);
 
   await setDoc(doc(firebaseDb, "news", id), {
-    ...cleanPayload,
+    ...cleaned,
     createdAt: Date.now(),
   });
 }
@@ -167,4 +171,44 @@ export async function addManualNews(payload: Omit<ManualNewsItem, "id" | "create
 export async function deleteManualNews(id: string) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
   await deleteDoc(doc(firebaseDb, "news", id));
+}
+
+// Accountability
+export async function getAccountability(): Promise<AccountabilityItem[]> {
+  if (!firebaseDb) return [];
+  const baseRef = collection(firebaseDb, "accountability");
+  const accountabilityQuery = query(baseRef, orderBy("year", "desc"));
+  const snap = await getDocs(accountabilityQuery);
+  return snap.docs.map((item) => {
+    const data = item.data();
+    return {
+      id: item.id,
+      year: String(data.year || ""),
+      phase: Number(data.phase ?? 0),
+      title: String(data.title || ""),
+      description: data.description ? String(data.description) : undefined,
+      files: Array.isArray(data.files) ? data.files : [],
+      createdAt: Number(data.createdAt || Date.now()),
+    };
+  });
+}
+
+export async function addAccountability(payload: Omit<AccountabilityItem, "id" | "createdAt">) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const id = crypto.randomUUID();
+  await setDoc(doc(firebaseDb, "accountability", id), {
+    ...payload,
+    createdAt: Date.now(),
+  });
+}
+
+export async function updateAccountability(id: string, payload: Partial<AccountabilityItem>) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const cleaned = cleanPayload(payload);
+  await updateDoc(doc(firebaseDb, "accountability", id), cleaned);
+}
+
+export async function deleteAccountability(id: string) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  await deleteDoc(doc(firebaseDb, "accountability", id));
 }

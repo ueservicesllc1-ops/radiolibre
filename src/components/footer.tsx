@@ -84,6 +84,9 @@ export function Footer() {
                 {link.label}
               </a>
             ))}
+            <a href="/rendicion" className="transition hover:text-brand-accent font-bold text-brand-accent">
+              Rendicion de Cuentas 2025
+            </a>
           </div>
         </div>
         <div>

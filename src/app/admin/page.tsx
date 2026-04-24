@@ -14,12 +14,16 @@ import {
   addManualNews,
   getManualNews,
   deleteManualNews,
+  getAccountability,
+  addAccountability,
+  updateAccountability,
+  deleteAccountability,
 } from "@/lib/cms";
 import { firebaseAuth } from "@/lib/firebase-client";
 import type { ManualNewsItem, ProgrammingItem, SocialLinks } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
-type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news";
+type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability";
 
 export default function AdminPage() {
   const firebaseMissing = !firebaseAuth;
@@ -49,13 +53,20 @@ export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
-  const [newsTitle, setNewsTitle] = useState("");
-  const [newsCategory, setNewsCategory] = useState("General");
-  const [newsDate, setNewsDate] = useState(new Date().toISOString().split("T")[0]);
-  const [newsUrl, setNewsUrl] = useState("");
   const [newsPhoto, setNewsPhoto] = useState<File | null>(null);
   const [newsContent, setNewsContent] = useState("");
   const [savingNews, setSavingNews] = useState(false);
+  const [accItems, setAccItems] = useState<any[]>([]);
+  const [accYear, setAccYear] = useState("2025");
+  const [accPhase, setAccPhase] = useState(0);
+  const [accTitle, setAccTitle] = useState("");
+  const [accDesc, setAccDesc] = useState("");
+  const [accFiles, setAccFiles] = useState<{ name: string; file: File }[]>([]);
+  const [currentFileName, setCurrentFileName] = useState("");
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [editingAccId, setEditingAccId] = useState<string | null>(null);
+  const [savingAcc, setSavingAcc] = useState(false);
+  const [showAccForm, setShowAccForm] = useState(false);
 
   useEffect(() => {
     if (!firebaseAuth) return;
@@ -74,6 +85,7 @@ export default function AdminPage() {
     getSocialLinks().then(setSocials).catch(() => setSocials(defaultSocialLinks));
     getProgramming().then(setProgramming).catch(() => setProgramming(defaultProgramming));
     getManualNews().then(setNews).catch(() => setNews([]));
+    getAccountability().then(setAccItems).catch(() => setAccItems([]));
   }, [unlocked]);
 
   function resetProgramForm() {
@@ -87,6 +99,17 @@ export default function AdminPage() {
     setProgSlot("Manana");
     setProgPhoto(null);
     setEditingProgramId(null);
+  }
+
+  function resetAccForm() {
+    setAccYear("2025");
+    setAccPhase(0);
+    setAccTitle("");
+    setAccDesc("");
+    setAccFiles([]);
+    setCurrentFileName("");
+    setCurrentFile(null);
+    setEditingAccId(null);
   }
 
   async function refreshProgramming() {
@@ -144,7 +167,6 @@ export default function AdminPage() {
       if (photoUrl) {
         newItem.photoUrl = photoUrl;
       } else if (editingProgramId) {
-        // Preservar foto anterior si no se subio una nueva
         const existing = programming.find((p) => p.id === editingProgramId);
         if (existing?.photoUrl) newItem.photoUrl = existing.photoUrl;
       }
@@ -197,7 +219,6 @@ export default function AdminPage() {
     setShowProgramForm(true);
     setError("");
     setSuccess("");
-    // Scroll al formulario
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -357,6 +378,17 @@ export default function AdminPage() {
             >
               Noticias
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("accountability")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "accountability"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Rendicion de cuentas
+            </button>
           </div>
         </aside>
 
@@ -383,8 +415,8 @@ export default function AdminPage() {
                 </div>
                 <div className="rounded-xl border border-zinc-200 p-4">
                   <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
-                  <p className="mt-2 text-sm font-bold text-zinc-800">Noticias</p>
-                  <p className="mt-1 text-xs text-zinc-600">Gestiona las noticias manuales de la radio.</p>
+                  <p className="mt-2 text-sm font-bold text-zinc-800">Rendicion de cuentas</p>
+                  <p className="mt-1 text-xs text-zinc-600">Sube informes anuales obligatorios (PDF).</p>
                 </div>
               </div>
             </div>
@@ -875,6 +907,337 @@ export default function AdminPage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "accountability" && (
+            <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-extrabold text-brand-ink">Rendicion de cuentas</h2>
+                  <p className="mt-1 text-sm text-zinc-600">Documentos oficiales de la emisora.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetAccForm();
+                    setShowAccForm(!showAccForm);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-4 py-2 text-sm font-bold text-brand-night"
+                >
+                  {showAccForm ? "Cerrar" : "Anadir informe"}
+                </button>
+              </div>
+
+              {showAccForm && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!accTitle.trim()) {
+                      setError("El titulo es obligatorio");
+                      return;
+                    }
+                    setSavingAcc(true);
+                    setError("");
+                    try {
+                      const uploadedFiles: AccountabilityFile[] = [];
+
+                      for (const item of accFiles) {
+                        const formData = new FormData();
+                        formData.append("file", item.file);
+                        formData.append("folder", "accountability");
+                        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                        if (!res.ok) throw new Error(`Error subiendo ${item.name}`);
+                        const data = await res.json();
+                        uploadedFiles.push({ name: item.name, url: data.url });
+                      }
+                      
+                      if (editingAccId) {
+                        const existing = accItems.find(i => i.id === editingAccId);
+                        await updateAccountability(editingAccId, {
+                          year: accYear,
+                          phase: accPhase,
+                          title: accTitle.trim(),
+                          description: accDesc.trim(),
+                          files: [...(existing?.files || []), ...uploadedFiles],
+                        });
+                      } else {
+                        await addAccountability({
+                          year: accYear,
+                          phase: accPhase,
+                          title: accTitle.trim(),
+                          description: accDesc.trim(),
+                          files: uploadedFiles,
+                        });
+                      }
+                      
+                      setAccItems(await getAccountability());
+                      resetAccForm();
+                      setShowAccForm(false);
+                      setSuccess(editingAccId ? "Fase actualizada" : "Fase guardada");
+                    } catch (err: any) {
+                      setError("Error: " + err.message);
+                    } finally {
+                      setSavingAcc(false);
+                    }
+                  }}
+                  className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                >
+                  <p className="text-sm font-bold text-brand-ink">
+                    {editingAccId ? "Editando Fase " + accPhase : "Nueva entrada de Rendicion"}
+                  </p>
+                  <div className="mb-4 mt-4">
+                    <label className="mb-2 block text-xs font-semibold uppercase text-zinc-600">Seleccionar Fase</label>
+                    <div className="flex gap-2">
+                      {[0, 1, 2, 3].map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => setAccPhase(f)}
+                          className={`flex-1 rounded-lg py-2 text-sm font-bold transition ${
+                            accPhase === f ? "bg-brand-night text-brand-accent" : "bg-white text-zinc-600 border border-zinc-200"
+                          }`}
+                        >
+                          Fase {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Año</label>
+                      <input
+                        value={accYear}
+                        onChange={(e) => setAccYear(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Titulo de esta entrada</label>
+                      <input
+                        value={accTitle}
+                        onChange={(e) => setAccTitle(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        placeholder="Ej. Informe de medios"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Contenido / Descripcion</label>
+                      <textarea
+                        value={accDesc}
+                        onChange={(e) => setAccDesc(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="sm:col-span-2 rounded-xl border border-zinc-200 bg-white p-4">
+                      <p className="mb-3 text-xs font-bold uppercase text-zinc-500">Añadir Archivos</p>
+                      
+                      {/* Asistente de Titulos 2025 */}
+                      <div className="mb-4 bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                        <p className="text-[10px] font-black uppercase text-brand-night mb-2">Sugerencias Fase {accPhase} (2025):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {accPhase === 0 && ["Designación al proceso", "Cronograma de Trabajo"].map(t => (
+                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
+                          ))}
+                          {accPhase === 1 && [
+                            "Informe preliminar 2025", "Atención directa a la comunidad", "Aprobación del Informe", 
+                            "Certificado emitido por el IESS", "Parrilla de Programación 2025", "Código Deontológico", 
+                            "Convenios de Cooperación", "Licencia Soprofon", "Procesos de contratación", "Estado Financieros"
+                          ].map(t => (
+                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
+                          ))}
+                          {accPhase === 2 && [
+                            "Convocatoria deliberación Pública", "Registro de llamadas", "Aporte de la Ciudadanía", 
+                            "Foto 1", "Foto 2", "Foto 3", "Foto 4", "Foto 5"
+                          ].map(t => (
+                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
+                          ))}
+                          {accPhase === 3 && [
+                            "Informe Final 2025", "AUDIO RENDICION", "VIDEO RENDICION"
+                          ].map(t => (
+                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="mb-1 block text-[10px] font-bold text-zinc-400">Titulo del archivo</label>
+                          <input 
+                            value={currentFileName}
+                            onChange={(e) => setCurrentFileName(e.target.value)}
+                            className="w-full rounded border border-zinc-200 px-2 py-1.5 text-xs"
+                            placeholder="Ej. Informe de Labores"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="mb-1 block text-[10px] font-bold text-zinc-400">Archivo</label>
+                          <input 
+                            type="file"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0] || null;
+                              setCurrentFile(f);
+                              if (f && !currentFileName) setCurrentFileName(f.name.split(".")[0]);
+                            }}
+                            className="w-full text-xs"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              if (currentFileName && currentFile) {
+                                setAccFiles([...accFiles, { name: currentFileName, file: currentFile }]);
+                                setCurrentFileName("");
+                                setCurrentFile(null);
+                              }
+                            }}
+                            className="rounded bg-brand-night px-4 py-2 text-xs font-bold text-brand-accent"
+                          >
+                            Añadir a lista
+                          </button>
+                        </div>
+                      </div>
+
+                      {accFiles.length > 0 && (
+                        <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4">
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase">Archivos por subir:</p>
+                          {accFiles.map((f, i) => (
+                            <div key={i} className="flex items-center justify-between bg-zinc-50 px-3 py-2 rounded-lg border border-zinc-100">
+                              <span className="text-xs font-semibold text-zinc-700">{f.name}</span>
+                              <button onClick={() => setAccFiles(accFiles.filter((_, idx) => idx !== i))} className="text-red-500 text-xs">Quitar</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingAcc}
+                    className="mt-6 w-full rounded-md bg-brand-night py-3 font-bold text-brand-accent shadow-lg"
+                  >
+                    {savingAcc ? "Subiendo archivos..." : "Guardar Fase " + accPhase}
+                  </button>
+                </form>
+              )}
+
+              {/* Vista Formal de Rendicion 2025 */}
+              <div className="mt-8 space-y-12">
+                {[0, 1, 2, 3].map((phaseNum) => {
+                  const phaseEntry = accItems.find(i => i.year === "2025" && i.phase === phaseNum);
+                  
+                  const titles = 
+                    phaseNum === 0 ? [
+                      "1. Designación al proceso de Rendición de cuentas", "2. Cronograma de Trabajo"
+                    ] :
+                    phaseNum === 1 ? [
+                      "Informe preliminar 2025", "Atención directa a la comunidad año 2025", "Aprobación del Informe", 
+                      "Certificado emitido por el IESS", "Parrilla de Programación 2025", "Código Deontológico", 
+                      "Convenios de Cooperación Interinstitucional 2025", "Licencia Soprofon", 
+                      "Procesos de contratación 2025", "Estado Financieros año 2025"
+                    ] :
+                    phaseNum === 2 ? [
+                      "Convocatoria a la deliberación Pública", "Registro de llamadas telefónicas", "Aporte de la Ciudadanía", 
+                      "Foto 1", "Foto 2", "Foto 3", "Foto 4", "Foto 5"
+                    ] :
+                    [
+                      "1. Informe Final de Rendición de cuentas 2025", 
+                      "AUDIO RENDICION DE CUENTAS", 
+                      "VIDEO RENDICION DE CUENTAS"
+                    ];
+
+                  return (
+                    <div key={phaseNum} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+                      <div className="bg-brand-night p-4 flex justify-between items-center">
+                        <h3 className="font-black text-brand-accent uppercase tracking-wider">Fase {phaseNum} (2025)</h3>
+                        <span className="text-[10px] font-bold text-white opacity-50 uppercase">Documentos Oficiales</span>
+                      </div>
+                      
+                      <div className="p-4 space-y-3">
+                        {titles.map((title) => {
+                          const file = phaseEntry?.files?.find((f: any) => 
+                            f.name.toLowerCase().includes(title.toLowerCase().replace(/^\d+\.\s*/, ""))
+                          );
+
+                          return (
+                            <div key={title} className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100 hover:border-brand-accent/30 transition">
+                              <span className={`text-xs font-bold ${file ? "text-brand-night" : "text-zinc-400"}`}>
+                                {file ? "✓ " : "○ "}{title}
+                              </span>
+                              
+                              <div className="flex gap-2">
+                                {file && (
+                                  <button 
+                                    onClick={async () => {
+                                      if (confirm("¿Borrar este archivo?")) {
+                                        const next = phaseEntry.files.filter((f: any) => f.name !== file.name);
+                                        await updateAccountability(phaseEntry.id, { files: next });
+                                        setAccItems(await getAccountability());
+                                      }
+                                    }}
+                                    className="text-[10px] font-bold text-red-500 hover:underline"
+                                  >
+                                    Borrar
+                                  </button>
+                                )}
+                                <label className="cursor-pointer bg-brand-night text-brand-accent px-3 py-1 rounded text-[10px] font-black hover:bg-brand-ink transition">
+                                  {file ? "REEMPLAZAR" : "SUBIR ARCHIVO"}
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0];
+                                      if (!f) return;
+                                      
+                                      setSavingAcc(true);
+                                      try {
+                                        const formData = new FormData();
+                                        formData.append("file", f);
+                                        formData.append("folder", "accountability");
+                                        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                                        if (!res.ok) throw new Error("Error en subida");
+                                        const data = await res.json();
+                                        
+                                        const newFile = { name: title, url: data.url };
+                                        
+                                        if (phaseEntry) {
+                                          // Actualizar existente
+                                          const otherFiles = (phaseEntry.files || []).filter((x: any) => x.name !== title);
+                                          await updateAccountability(phaseEntry.id, { 
+                                            files: [...otherFiles, newFile] 
+                                          });
+                                        } else {
+                                          // Crear nuevo para esta fase
+                                          await addAccountability({
+                                            year: "2025",
+                                            phase: phaseNum,
+                                            title: `Rendición de Cuentas Fase ${phaseNum}`,
+                                            files: [newFile]
+                                          });
+                                        }
+                                        setAccItems(await getAccountability());
+                                        setSuccess("Archivo guardado: " + title);
+                                      } catch (err: any) {
+                                        setError("Error subiendo: " + err.message);
+                                      } finally {
+                                        setSavingAcc(false);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

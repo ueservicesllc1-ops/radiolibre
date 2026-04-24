@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const folderRaw = formData.get("folder");
   const folderStr = typeof folderRaw === "string" ? folderRaw.toLowerCase() : "";
-  const folder = ["programming", "news", "gallery"].includes(folderStr) ? folderStr : "gallery";
+  const folder = ["programming", "news", "gallery", "accountability"].includes(folderStr) ? folderStr : "gallery";
 
   try {
     const bytes = await file.arrayBuffer();
