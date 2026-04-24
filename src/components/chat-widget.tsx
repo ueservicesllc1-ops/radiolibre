@@ -16,11 +16,21 @@ export function ChatWidget() {
   const [text, setText] = useState("");
   const [userName, setUserName] = useState<string | null>(null);
   const [step, setStep] = useState<"initial" | "asking_name" | "chatting">("initial");
+  const [hasNewMessage, setHasNewMessage] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Persistence
   useEffect(() => {
+    const savedId = localStorage.getItem("radio_chat_session");
+    const savedName = localStorage.getItem("radio_chat_name");
+    const savedStep = localStorage.getItem("radio_chat_step") as any;
+
+    if (savedId) setSessionId(savedId);
+    if (savedName) setUserName(savedName);
+    if (savedStep) setStep(savedStep);
+    
     if (typeof window !== "undefined") {
       audioRef.current = new Audio(NOTIFICATION_SOUND);
     }
@@ -37,11 +47,11 @@ export function ChatWidget() {
     const unsubscribe = onSnapshot(q, (snap) => {
       const newMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
       
-      // Play sound if last message is from admin and it's new
-      if (newMessages.length > messages.length) {
+      if (newMessages.length > messages.length && messages.length > 0) {
         const last = newMessages[newMessages.length - 1];
-        if (last.sender === "admin" && isOpen) {
+        if (last.sender === "admin") {
           audioRef.current?.play().catch(() => {});
+          if (!isOpen) setHasNewMessage(true);
         }
       }
       
@@ -50,6 +60,10 @@ export function ChatWidget() {
 
     return () => unsubscribe();
   }, [sessionId, messages.length, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) setHasNewMessage(false);
+  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -65,6 +79,7 @@ export function ChatWidget() {
     if (!currentSessionId) {
       currentSessionId = await createChatSession();
       setSessionId(currentSessionId);
+      localStorage.setItem("radio_chat_session", currentSessionId);
     }
 
     const userText = text;
@@ -73,14 +88,17 @@ export function ChatWidget() {
     if (step === "initial") {
       await sendChatMessage(currentSessionId, userText, "user");
       setStep("asking_name");
+      localStorage.setItem("radio_chat_step", "asking_name");
       setTimeout(async () => {
         await sendChatMessage(currentSessionId!, "Hola, ¿cuál es tu nombre?", "admin");
       }, 1000);
     } else if (step === "asking_name") {
       const name = userText.trim();
       setUserName(name);
+      localStorage.setItem("radio_chat_name", name);
       await sendChatMessage(currentSessionId, userText, "user", name);
       setStep("chatting");
+      localStorage.setItem("radio_chat_step", "chatting");
       setTimeout(async () => {
         await sendChatMessage(currentSessionId!, `Gracias ${name}, en unos minutos un asesor se comunicará contigo.`, "admin");
       }, 1000);
@@ -169,14 +187,16 @@ export function ChatWidget() {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="group flex h-14 w-14 items-center justify-center rounded-full bg-brand-night text-brand-accent shadow-xl transition hover:scale-110 active:scale-95"
+          className={`group flex h-14 w-14 items-center justify-center rounded-full bg-brand-night text-brand-accent shadow-xl transition hover:scale-110 active:scale-95 ${hasNewMessage ? 'animate-bounce' : ''}`}
         >
           <div className="relative">
             <MessageCircle size={28} />
-            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 border-2 border-brand-night" />
+            {hasNewMessage && (
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 border-2 border-brand-night animate-pulse" />
+            )}
           </div>
           <div className="absolute right-16 hidden whitespace-nowrap rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-zinc-800 shadow-lg group-hover:block animate-in fade-in slide-in-from-right-2">
-            ¿Necesitas ayuda?
+            {hasNewMessage ? "¡Nuevo mensaje!" : "¿Necesitas ayuda?"}
           </div>
         </button>
       )}
