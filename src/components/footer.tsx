@@ -84,12 +84,6 @@ export function Footer() {
                 {link.label}
               </a>
             ))}
-            <a href="/terminos" className="transition hover:text-brand-accent">
-              Términos y Condiciones
-            </a>
-            <a href="/politica" className="transition hover:text-brand-accent">
-              Política de Privacidad
-            </a>
             <a href="/rendicion" className="transition hover:text-brand-accent font-bold text-brand-accent">
               Rendicion de Cuentas 2025
             </a>
