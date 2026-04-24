@@ -26,12 +26,14 @@ import {
   getContactMessages,
   markMessageAsRead,
   deleteMessage,
+  getChatSessions,
+  sendChatMessage,
 } from "@/lib/cms";
 import { firebaseAuth } from "@/lib/firebase-client";
 import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
-type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages";
+type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats";
 
 export default function AdminPage() {
   const firebaseMissing = !firebaseAuth;
@@ -113,6 +115,37 @@ export default function AdminPage() {
 
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [adminChatText, setAdminChatText] = useState("");
+
+  useEffect(() => {
+    if (!unlocked) return;
+    refreshChatSessions();
+  }, [unlocked]);
+
+  async function refreshChatSessions() {
+    const items = await getChatSessions().catch(() => []);
+    setChatSessions(items);
+  }
+
+  useEffect(() => {
+    if (!activeChatId || !firebaseDb) return;
+    const q = query(collection(firebaseDb, "chats", activeChatId, "messages"), orderBy("createdAt", "asc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
+      setChatMessages(msgs);
+    });
+    return () => unsub();
+  }, [activeChatId]);
+
+  async function sendAdminReply(e: React.FormEvent) {
+    e.preventDefault();
+    if (!adminChatText.trim() || !activeChatId) return;
+    await sendChatMessage(activeChatId, adminChatText, "admin");
+    setAdminChatText("");
+  }
 
   async function refreshMessages() {
     const items = await getContactMessages().catch(() => []);
@@ -460,6 +493,17 @@ export default function AdminPage() {
             >
               Mensajes
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("chats")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "chats"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Chats en Vivo
+            </button>
           </div>
         </aside>
 
@@ -498,6 +542,11 @@ export default function AdminPage() {
                   <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
                   <p className="mt-2 text-sm font-bold text-zinc-800">Mensajes</p>
                   <p className="mt-1 text-xs text-zinc-600">Revisa los mensajes enviados por los oyentes.</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 p-4">
+                  <p className="text-xs font-semibold uppercase text-zinc-500">Modulo</p>
+                  <p className="mt-2 text-sm font-bold text-zinc-800">Chats en Vivo</p>
+                  <p className="mt-1 text-xs text-zinc-600">Responde en tiempo real a los visitantes de la radio.</p>
                 </div>
               </div>
             </div>
@@ -1546,6 +1595,66 @@ export default function AdminPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeSection === "chats" && (
+            <div className="grid h-[600px] gap-6 lg:grid-cols-[300px_1fr]">
+              {/* Session List */}
+              <div className="flex flex-col border-r border-zinc-100 pr-6 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-extrabold text-brand-ink">Chats en Vivo</h2>
+                  <button onClick={refreshChatSessions} className="text-xs text-brand-accent font-bold">Refrescar</button>
+                </div>
+                <div className="space-y-2">
+                  {chatSessions.length === 0 && <p className="text-sm text-zinc-500 italic">No hay chats activos.</p>}
+                  {chatSessions.map((session) => (
+                    <button
+                      key={session.id}
+                      onClick={() => setActiveChatId(session.id)}
+                      className={`w-full rounded-xl p-3 text-left transition ${activeChatId === session.id ? 'bg-brand-accent text-brand-night shadow-lg' : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700'}`}
+                    >
+                      <p className="text-sm font-bold truncate">{session.userName || "Visitante Anónimo"}</p>
+                      <p className="mt-1 text-[10px] opacity-70 truncate">{session.lastMessage || "Sin mensajes"}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chat Window */}
+              <div className="flex flex-col h-full overflow-hidden bg-zinc-50 rounded-2xl border border-zinc-100">
+                {activeChatId ? (
+                  <>
+                    <div className="bg-white p-4 border-b border-zinc-100">
+                      <p className="text-sm font-bold text-brand-ink">
+                        Chat con: {chatSessions.find(s => s.id === activeChatId)?.userName || "Anónimo"}
+                      </p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {chatMessages.map((msg) => (
+                        <div key={msg.id} className={`flex ${msg.sender === "admin" ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[70%] rounded-xl px-3 py-2 text-sm ${msg.sender === "admin" ? 'bg-brand-night text-white' : 'bg-white border border-zinc-200 text-zinc-800'}`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <form onSubmit={sendAdminReply} className="bg-white p-4 border-t border-zinc-100 flex gap-2">
+                      <input
+                        value={adminChatText}
+                        onChange={(e) => setAdminChatText(e.target.value)}
+                        placeholder="Escribe una respuesta..."
+                        className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                      />
+                      <button type="submit" className="rounded-lg bg-brand-accent px-4 py-2 text-xs font-bold text-brand-night">Enviar</button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-zinc-400 text-sm italic">
+                    Selecciona un chat para comenzar a responder.
+                  </div>
+                )}
               </div>
             </div>
           )}

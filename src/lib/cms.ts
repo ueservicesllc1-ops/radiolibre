@@ -1,6 +1,6 @@
 "use client";
 
-import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage } from "@/types/cms";
+import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 import {
   collection,
   deleteDoc,
@@ -13,6 +13,7 @@ import {
   setDoc,
   updateDoc,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { firebaseDb } from "@/lib/firebase-client";
 
@@ -284,3 +285,44 @@ export async function deleteMessage(id: string) {
   if (!firebaseDb) return;
   await deleteDoc(doc(firebaseDb, "messages", id));
 }
+
+// Chat System
+export async function createChatSession(): Promise<string> {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const id = crypto.randomUUID();
+  await setDoc(doc(firebaseDb, "chats", id), {
+    updatedAt: Date.now(),
+    status: "active",
+    unreadCount: 0,
+  });
+  return id;
+}
+
+export async function sendChatMessage(sessionId: string, text: string, sender: "user" | "admin", userName?: string) {
+  if (!firebaseDb) return;
+  const msgId = crypto.randomUUID();
+  const sessionRef = doc(firebaseDb, "chats", sessionId);
+  const msgRef = doc(collection(sessionRef, "messages"), msgId);
+
+  await setDoc(msgRef, {
+    text,
+    sender,
+    createdAt: Date.now(),
+  });
+
+  const updateData: any = {
+    lastMessage: text,
+    updatedAt: Date.now(),
+  };
+  if (userName) updateData.userName = userName;
+  
+  await updateDoc(sessionRef, updateData);
+}
+
+export async function getChatSessions(): Promise<ChatSession[]> {
+  if (!firebaseDb) return [];
+  const q = query(collection(firebaseDb, "chats"), orderBy("updatedAt", "desc"), limit(50));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatSession));
+}
+

@@ -16,6 +16,22 @@ export interface ContactMessage {
   read?: boolean;
 }
 
+export interface ChatMessage {
+  id: string;
+  text: string;
+  sender: "user" | "admin";
+  createdAt: number;
+}
+
+export interface ChatSession {
+  id: string;
+  userName?: string;
+  lastMessage?: string;
+  updatedAt: number;
+  status: "active" | "archived";
+  unreadCount: number;
+}
+
 export interface GalleryImage {
   id: string;
   url: string;
