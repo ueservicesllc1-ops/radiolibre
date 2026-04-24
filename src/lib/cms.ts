@@ -287,9 +287,13 @@ export async function deleteMessage(id: string) {
 }
 
 // Chat System
+function generateId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 export async function createChatSession(): Promise<string> {
   if (!firebaseDb) throw new Error("Firebase no configurado");
-  const id = crypto.randomUUID();
+  const id = generateId();
   await setDoc(doc(firebaseDb, "chats", id), {
     updatedAt: Date.now(),
     status: "active",
@@ -300,23 +304,28 @@ export async function createChatSession(): Promise<string> {
 
 export async function sendChatMessage(sessionId: string, text: string, sender: "user" | "admin", userName?: string) {
   if (!firebaseDb) return;
-  const msgId = crypto.randomUUID();
+  const msgId = generateId();
   const sessionRef = doc(firebaseDb, "chats", sessionId);
   const msgRef = doc(collection(sessionRef, "messages"), msgId);
 
-  await setDoc(msgRef, {
-    text,
-    sender,
-    createdAt: Date.now(),
-  });
+  try {
+    await setDoc(msgRef, {
+      text,
+      sender,
+      createdAt: Date.now(),
+    });
 
-  const updateData: any = {
-    lastMessage: text,
-    updatedAt: Date.now(),
-  };
-  if (userName) updateData.userName = userName;
-  
-  await updateDoc(sessionRef, updateData);
+    const updateData: any = {
+      lastMessage: text,
+      updatedAt: Date.now(),
+    };
+    if (userName) updateData.userName = userName;
+    
+    await updateDoc(sessionRef, updateData);
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
 }
 
 export async function getChatSessions(): Promise<ChatSession[]> {

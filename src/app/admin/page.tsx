@@ -122,14 +122,14 @@ export default function AdminPage() {
   const [adminChatText, setAdminChatText] = useState("");
 
   useEffect(() => {
-    if (!unlocked) return;
-    refreshChatSessions();
+    if (!unlocked || !firebaseDb) return;
+    const q = query(collection(firebaseDb, "chats"), orderBy("updatedAt", "desc"), limit(50));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatSession));
+      setChatSessions(items);
+    });
+    return () => unsub();
   }, [unlocked]);
-
-  async function refreshChatSessions() {
-    const items = await getChatSessions().catch(() => []);
-    setChatSessions(items);
-  }
 
   useEffect(() => {
     if (!activeChatId || !firebaseDb) return;
@@ -144,8 +144,17 @@ export default function AdminPage() {
   async function sendAdminReply(e: React.FormEvent) {
     e.preventDefault();
     if (!adminChatText.trim() || !activeChatId) return;
-    await sendChatMessage(activeChatId, adminChatText, "admin");
+    
+    const originalText = adminChatText;
     setAdminChatText("");
+    setError("");
+
+    try {
+      await sendChatMessage(activeChatId, originalText, "admin");
+    } catch (err: any) {
+      setError("No se pudo enviar el mensaje: " + err.message);
+      setAdminChatText(originalText);
+    }
   }
 
   async function refreshMessages() {
@@ -1604,10 +1613,7 @@ export default function AdminPage() {
             <div className="grid h-[600px] gap-6 lg:grid-cols-[300px_1fr]">
               {/* Session List */}
               <div className="flex flex-col border-r border-zinc-100 pr-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-extrabold text-brand-ink">Chats en Vivo</h2>
-                  <button onClick={refreshChatSessions} className="text-xs text-brand-accent font-bold">Refrescar</button>
-                </div>
+                <h2 className="text-xl font-extrabold text-brand-ink mb-4">Chats en Vivo</h2>
                 <div className="space-y-2">
                   {chatSessions.length === 0 && <p className="text-sm text-zinc-500 italic">No hay chats activos.</p>}
                   {chatSessions.map((session) => (
