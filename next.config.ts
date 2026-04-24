@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "static.dw.com" },
       { protocol: "https", hostname: "www.lanacion.com.ar" },
       { protocol: "https", hostname: "www.clarin.com" },
+      { protocol: "https", hostname: "sandia.datanubex.uk" },
     ],
   },
 };
