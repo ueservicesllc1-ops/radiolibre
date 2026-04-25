@@ -30,11 +30,11 @@ export function Navbar() {
         <div className="section-shell flex items-center justify-between px-4 py-3">
           <a href="/" className="flex items-center gap-2.5 text-white">
             <Image
-              src="/logo1.png"
+              src="/logo2.png"
               alt="Radio Libre"
-              width={40}
-              height={40}
-              className="h-10 w-10 object-contain"
+              width={50}
+              height={50}
+              className="h-12 w-12 object-contain"
             />
             <span className="text-xl font-bold tracking-tight">
               RADIO <span className="text-brand-accent">LIBRE</span>
@@ -81,6 +81,15 @@ export function Navbar() {
         className="border-b border-white/10 bg-brand-night/95 p-4 md:hidden"
       >
         <div className="section-shell flex flex-col gap-3 px-4">
+          <div className="mb-4 flex justify-center border-b border-white/5 pb-4">
+            <Image
+              src="/logo2.png"
+              alt="Radio Libre"
+              width={100}
+              height={100}
+              className="h-24 w-24 object-contain"
+            />
+          </div>
           {navLinks.map((item) => (
             <a
               key={item.label}
