@@ -141,8 +141,6 @@ export function LivePlayer() {
     <section id="en-vivo" className="-mt-8 md:-mt-[4rem] relative z-40 bg-transparent px-4 pb-10">
       <audio
         ref={audioRef}
-        src={RADIO_STREAM_URL.includes(";") ? RADIO_STREAM_URL : `${RADIO_STREAM_URL};`}
-        type="audio/mpeg"
         preload="none"
         onLoadedMetadata={() => {
           if (!audioRef.current) return;
@@ -155,7 +153,12 @@ export function LivePlayer() {
           setIsPlaying(false);
           setStreamError("La senal en vivo no responde en este momento.");
         }}
-      />
+      >
+        <source 
+          src={RADIO_STREAM_URL.includes(";") ? RADIO_STREAM_URL : `${RADIO_STREAM_URL};`} 
+          type="audio/mpeg" 
+        />
+      </audio>
       <div className="section-shell overflow-hidden rounded-2xl border border-zinc-900/10 bg-[#111111] text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
         <div className="grid md:grid-cols-[1.1fr_0.9fr]">
           <div className="p-4 sm:p-5">
