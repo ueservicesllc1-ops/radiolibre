@@ -138,7 +138,7 @@ export function LivePlayer() {
   }
 
   return (
-    <section id="en-vivo" className="-mt-[4rem] relative z-40 bg-transparent px-4 pb-10">
+    <section id="en-vivo" className="-mt-8 md:-mt-[4rem] relative z-40 bg-transparent px-4 pb-10">
       <audio
         ref={audioRef}
         src={RADIO_STREAM_URL.includes(";") ? RADIO_STREAM_URL : `${RADIO_STREAM_URL};`}
