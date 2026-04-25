@@ -42,7 +42,7 @@ export function Hero() {
             />
           </a>
           <h1 className="text-balance text-4xl font-extrabold uppercase leading-[0.95] sm:text-5xl lg:text-7xl">
-            La radio de <span className="text-brand-accent">LA VERDAD</span>
+            Radio Libre <span className="text-brand-accent">LA VERDADERA</span>
           </h1>
           <p className="mt-6 max-w-lg mx-auto md:mx-0 text-base leading-relaxed text-white/90 sm:text-lg">
             Musica, informacion y entretenimiento las 24 horas del dia desde Babahoyo para el mundo.
