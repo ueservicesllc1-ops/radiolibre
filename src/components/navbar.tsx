@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Menu, Radio, X } from "lucide-react";
 import { motion } from "framer-motion";
@@ -28,9 +29,13 @@ export function Navbar() {
       >
         <div className="section-shell flex items-center justify-between px-4 py-3">
           <a href="/" className="flex items-center gap-2.5 text-white">
-            <span className="rounded-full bg-brand-accent/15 p-1.5 text-brand-accent">
-              <Radio size={18} />
-            </span>
+            <Image
+              src="/logo1.png"
+              alt="Radio Libre"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+            />
             <span className="text-xl font-bold tracking-tight">
               RADIO <span className="text-brand-accent">LIBRE</span>
             </span>

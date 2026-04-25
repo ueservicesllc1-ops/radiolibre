@@ -8,7 +8,7 @@ import { defaultProgramming, getProgramming } from "@/lib/cms";
 import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
 const RADIO_STREAM_URL =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "https://cloudstream2036.conectarhosting.com/8146/stream";
+  process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "https://cloudstream2036.conectarhosting.com/8146/stream.mp3";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -141,7 +141,7 @@ export function LivePlayer() {
     <section id="en-vivo" className="-mt-8 md:-mt-[4rem] relative z-40 bg-transparent px-4 pb-10">
       <audio
         ref={audioRef}
-        preload="none"
+        preload="auto"
         onLoadedMetadata={() => {
           if (!audioRef.current) return;
           audioRef.current.volume = volume;
@@ -155,7 +155,7 @@ export function LivePlayer() {
         }}
       >
         <source 
-          src={RADIO_STREAM_URL.includes(";") ? RADIO_STREAM_URL : `${RADIO_STREAM_URL};`} 
+          src={RADIO_STREAM_URL} 
           type="audio/mpeg" 
         />
       </audio>

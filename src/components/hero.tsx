@@ -38,7 +38,7 @@ export function Hero() {
               width={560}
               height={560}
               unoptimized
-              className="mx-auto md:mx-0 h-48 w-48 sm:h-56 sm:w-56 bg-transparent object-contain"
+              className="mx-auto md:mx-0 h-32 w-32 sm:h-56 sm:w-56 bg-transparent object-contain"
             />
           </a>
           <h1 className="text-balance text-4xl font-extrabold uppercase leading-[0.95] sm:text-5xl lg:text-7xl">
