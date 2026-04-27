@@ -7,8 +7,6 @@ function proxyHeaders(req: Request) {
   const headers: Record<string, string> = {
     "user-agent": "RadioLibreProxy/1.0",
   };
-  const range = req.headers.get("range");
-  if (range) headers.Range = range;
   return headers;
 }
 
