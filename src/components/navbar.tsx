@@ -18,14 +18,14 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    <header className="fixed inset-x-0 top-0 z-50 pointer-events-none">
       <motion.nav
         initial={false}
         animate={{
           backgroundColor: isScrolled ? "rgba(7, 7, 7, 0.92)" : "rgba(7, 7, 7, 0.28)",
           borderColor: isScrolled ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.08)",
         }}
-        className="w-full border-b backdrop-blur-md"
+        className="w-full border-b backdrop-blur-md pointer-events-auto"
       >
         <div className="section-shell flex items-center justify-between px-4 py-3">
           <a href="/" className="flex items-center gap-2.5 text-white">
@@ -78,7 +78,7 @@ export function Navbar() {
           y: isOpen ? 0 : -8,
           pointerEvents: isOpen ? "auto" : "none",
         }}
-        className="border-b border-white/10 bg-brand-night/95 p-4 md:hidden"
+        className="absolute inset-x-0 top-full border-b border-white/10 bg-brand-night/95 p-4 md:hidden pointer-events-auto"
       >
         <div className="section-shell flex flex-col gap-3 px-4">
           <div className="mb-4 flex justify-center border-b border-white/5 pb-4">
