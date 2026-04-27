@@ -9,6 +9,9 @@ import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
 const RADIO_STREAM_URL =
   process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "/api/radio-stream";
+const RADIO_STREAM_FALLBACK_URL =
+  process.env.NEXT_PUBLIC_RADIO_STREAM_FALLBACK_URL ||
+  "https://cloudstream2036.conectarhosting.com:8146/stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -16,6 +19,8 @@ export function LivePlayer() {
   const [streamError, setStreamError] = useState("");
   const [currentProgram, setCurrentProgram] = useState<ProgrammingItem | null>(null);
   const [volume, setVolume] = useState(0.67);
+  const [streamIndex, setStreamIndex] = useState(0);
+  const streamSources = [RADIO_STREAM_URL, RADIO_STREAM_FALLBACK_URL];
 
   function parseMinutes(time: string) {
     const [hour, minute] = time.split(":").map(Number);
@@ -109,6 +114,16 @@ export function LivePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.load();
+    if (!isPlaying) return;
+    audioRef.current.play().catch(() => {
+      setIsPlaying(false);
+      setStreamError("No se pudo continuar la transmision en vivo.");
+    });
+  }, [isPlaying, streamIndex]);
+
   async function togglePlay() {
     const audio = audioRef.current;
     if (!audio) return;
@@ -121,6 +136,9 @@ export function LivePlayer() {
         return;
       }
 
+      // Safari iOS is more reliable when load() is called
+      // just before the user-initiated play().
+      audio.load();
       await audio.play();
       setIsPlaying(true);
     } catch {
@@ -141,7 +159,8 @@ export function LivePlayer() {
     <section id="en-vivo" className="-mt-8 md:-mt-[4rem] relative z-40 bg-transparent px-4 pb-10">
       <audio
         ref={audioRef}
-        preload="auto"
+        preload="none"
+        playsInline
         onLoadedMetadata={() => {
           if (!audioRef.current) return;
           audioRef.current.volume = volume;
@@ -150,14 +169,16 @@ export function LivePlayer() {
         onPause={() => setIsPlaying(false)}
         onPlay={() => setIsPlaying(true)}
         onError={() => {
+          const hasFallback = streamIndex < streamSources.length - 1;
+          if (hasFallback) {
+            setStreamIndex((prev) => prev + 1);
+            return;
+          }
           setIsPlaying(false);
           setStreamError("La senal en vivo no responde en este momento.");
         }}
       >
-        <source 
-          src={RADIO_STREAM_URL} 
-          type="audio/mpeg" 
-        />
+        <source src={streamSources[streamIndex]} type="audio/mpeg" />
       </audio>
       <div className="section-shell overflow-hidden rounded-2xl border border-zinc-900/10 bg-[#111111] text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
         <div className="grid md:grid-cols-[1.1fr_0.9fr]">
