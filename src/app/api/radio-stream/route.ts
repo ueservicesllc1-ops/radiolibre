@@ -6,7 +6,6 @@ const STREAM_SOURCE_URL =
 function proxyHeaders(req: Request) {
   const headers: Record<string, string> = {
     "user-agent": "RadioLibreProxy/1.0",
-    "icy-metadata": "1",
   };
   const range = req.headers.get("range");
   if (range) headers.Range = range;
