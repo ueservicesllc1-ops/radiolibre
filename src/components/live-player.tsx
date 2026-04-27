@@ -18,6 +18,7 @@ const RADIO_STREAM_HTTP_FALLBACK =
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [streamError, setStreamError] = useState("");
   const [currentProgram, setCurrentProgram] = useState<ProgrammingItem | null>(null);
@@ -124,40 +125,39 @@ export function LivePlayer() {
     setStreamError("");
     try {
       if (isPlaying) {
+        shouldAutoPlayRef.current = false;
         audio.pause();
         setIsPlaying(false);
         return;
       }
 
-      let played = false;
-      let firstError = "";
-      for (let i = 0; i < streamSources.length; i += 1) {
-        const source = streamSources[i];
-        try {
-          audio.src = source;
-          // Safari iOS is more reliable when load() is called
-          // just before the user-initiated play().
-          audio.load();
-          await audio.play();
-          setStreamIndex(i);
-          setIsPlaying(true);
-          played = true;
-          break;
-        } catch (error) {
-          if (!firstError) firstError = String(error);
-        }
-      }
-
-      if (!played) {
-        setIsPlaying(false);
-        setStreamError("No se pudo iniciar el audio en vivo.");
-        if (firstError) console.warn("Live stream playback failed:", firstError);
-      }
+      shouldAutoPlayRef.current = true;
+      // Safari iOS is more reliable when load() is called
+      // just before the user-initiated play().
+      audio.load();
+      await audio.play();
+      setIsPlaying(true);
     } catch {
       setIsPlaying(false);
       setStreamError("No se pudo iniciar el audio en vivo.");
     }
   }
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!shouldAutoPlayRef.current) return;
+
+    audio.load();
+    audio.play().then(() => {
+      setIsPlaying(true);
+    }).catch(() => {
+      setIsPlaying(false);
+      if (streamIndex >= streamSources.length - 1) {
+        setStreamError("No se pudo iniciar el audio en vivo.");
+      }
+    });
+  }, [streamIndex, streamSources.length]);
 
   function onVolumeChange(nextValue: number) {
     setVolume(nextValue);
@@ -182,6 +182,11 @@ export function LivePlayer() {
         onPause={() => setIsPlaying(false)}
         onPlay={() => setIsPlaying(true)}
         onError={() => {
+          const hasFallback = streamIndex < streamSources.length - 1;
+          if (shouldAutoPlayRef.current && hasFallback) {
+            setStreamIndex((prev) => prev + 1);
+            return;
+          }
           setIsPlaying(false);
           setStreamError("La senal en vivo no responde en este momento.");
         }}
