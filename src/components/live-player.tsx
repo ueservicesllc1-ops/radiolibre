@@ -8,7 +8,7 @@ import { defaultProgramming, getProgramming } from "@/lib/cms";
 import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
 const RADIO_STREAM_URL =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "https://cloudstream2036.conectarhosting.com/8146/stream.mp3";
+  process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "/api/radio-stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
