@@ -264,6 +264,25 @@ export default function AdminPage() {
     }
   }
 
+  async function onAddPhaseTitle(phaseNum: number) {
+    const currentTitles = phaseTitles[phaseNum] || [];
+    const nextIndex = currentTitles.length + 1;
+    const nextTitle = `${nextIndex}. Nuevo documento`;
+    const nextTitles: AccountabilityPhaseTitles = {
+      ...phaseTitles,
+      [phaseNum]: [...currentTitles, nextTitle],
+    };
+    setError("");
+    setSuccess("");
+    try {
+      await saveAccountabilityPhaseTitles(nextTitles);
+      setPhaseTitles(nextTitles);
+      setSuccess(`Nuevo item agregado en Fase ${phaseNum}`);
+    } catch (err: any) {
+      setError("No se pudo agregar el item: " + (err.message || "Error desconocido"));
+    }
+  }
+
   async function onSaveNewProgram(event: FormEvent) {
     event.preventDefault();
     if (!progName.trim()) {
@@ -1405,7 +1424,16 @@ export default function AdminPage() {
                     <div key={phaseNum} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
                       <div className="bg-brand-night p-4 flex justify-between items-center">
                         <h3 className="font-black text-brand-accent uppercase tracking-wider">Fase {phaseNum} (2025)</h3>
-                        <span className="text-[10px] font-bold text-white opacity-50 uppercase">Documentos Oficiales</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold text-white opacity-50 uppercase">Documentos Oficiales</span>
+                          <button
+                            type="button"
+                            onClick={() => onAddPhaseTitle(phaseNum)}
+                            className="rounded bg-brand-accent px-3 py-1 text-[10px] font-black uppercase text-brand-night hover:bg-brand-accent-soft"
+                          >
+                            Anadir nuevo
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="p-4 space-y-3">
