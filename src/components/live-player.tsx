@@ -7,14 +7,10 @@ import { Pause, Play, Volume2 } from "lucide-react";
 import { defaultProgramming, getProgramming } from "@/lib/cms";
 import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
-const RADIO_STREAM_URL =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_URL || "/api/radio-stream";
-const RADIO_STREAM_FALLBACK_URL =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_FALLBACK_URL ||
+const DIRECT_HTTPS_STREAM_URL =
+  process.env.NEXT_PUBLIC_RADIO_STREAM_URL ||
   "https://cloudstream2036.conectarhosting.com:8146/stream";
-const RADIO_STREAM_HTTP_FALLBACK =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_HTTP_FALLBACK ||
-  "http://cloudstream2036.conectarhosting.com:8146/stream";
+const PROXY_STREAM_URL = "/api/radio-stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -24,7 +20,7 @@ export function LivePlayer() {
   const [currentProgram, setCurrentProgram] = useState<ProgrammingItem | null>(null);
   const [volume, setVolume] = useState(0.67);
   const [streamIndex, setStreamIndex] = useState(0);
-  const streamSources = [RADIO_STREAM_URL, RADIO_STREAM_FALLBACK_URL, RADIO_STREAM_HTTP_FALLBACK];
+  const streamSources = [DIRECT_HTTPS_STREAM_URL, PROXY_STREAM_URL];
 
   function parseMinutes(time: string) {
     const [hour, minute] = time.split(":").map(Number);

@@ -1,19 +1,27 @@
 export const runtime = "nodejs";
 
 const STREAM_SOURCE_URL =
-  process.env.RADIO_STREAM_SOURCE_URL || "http://cloudstream2036.conectarhosting.com:8146/stream";
+  process.env.RADIO_STREAM_URL || "http://cloudstream2036.conectarhosting.com:8146/stream";
+let activeListeners = 0;
 
 function proxyHeaders(req: Request) {
   const headers: Record<string, string> = {
     "user-agent": "RadioLibreProxy/1.0",
+    "Icy-MetaData": "1",
   };
+
+  const range = req.headers.get("range");
+  if (range) headers.Range = range;
   return headers;
 }
 
 function buildResponseHeaders(upstream: Response) {
   const headers = new Headers();
   headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Cache-Control", "no-cache");
+  headers.set("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  headers.set("Content-Type", upstream.headers.get("content-type") || "audio/mpeg");
 
   const passthrough = [
     "content-type",
@@ -59,17 +67,69 @@ export async function HEAD(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const upstream = await fetch(STREAM_SOURCE_URL, {
-    method: "GET",
-    headers: proxyHeaders(request),
-    cache: "no-store",
-  });
+  activeListeners += 1;
+  const listenerLabel = `[radio-proxy] listener opened (${activeListeners} active)`;
+  console.log(listenerLabel);
+
+  const controller = new AbortController();
+  let closed = false;
+  const closeListener = (reason: string) => {
+    if (closed) return;
+    closed = true;
+    activeListeners = Math.max(0, activeListeners - 1);
+    controller.abort(reason);
+    console.log(`[radio-proxy] listener closed: ${reason} (${activeListeners} active)`);
+  };
+
+  request.signal.addEventListener("abort", () => closeListener("client-aborted"), { once: true });
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(STREAM_SOURCE_URL, {
+      method: "GET",
+      headers: proxyHeaders(request),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    closeListener("upstream-fetch-error");
+    console.error("[radio-proxy] upstream connection error", error);
+    return new Response("No se pudo abrir la senal en vivo", { status: 502 });
+  }
 
   if (!upstream.ok && upstream.status !== 206) {
+    closeListener(`upstream-status-${upstream.status}`);
     return new Response("No se pudo abrir la senal en vivo", { status: upstream.status || 502 });
   }
 
-  return new Response(upstream.body, {
+  if (!upstream.body) {
+    closeListener("empty-upstream-body");
+    return new Response("No se pudo abrir la senal en vivo", { status: 502 });
+  }
+
+  const reader = upstream.body.getReader();
+  const body = new ReadableStream<Uint8Array>({
+    async pull(streamController) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          streamController.close();
+          closeListener("upstream-ended");
+          return;
+        }
+        if (value) streamController.enqueue(value);
+      } catch (error) {
+        streamController.error(error);
+        console.error("[radio-proxy] upstream stream error", error);
+        closeListener("upstream-read-error");
+      }
+    },
+    cancel() {
+      closeListener("downstream-cancelled");
+    },
+  });
+
+  return new Response(body, {
     status: upstream.status,
     headers: buildResponseHeaders(upstream),
   });
