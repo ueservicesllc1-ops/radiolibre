@@ -1,6 +1,6 @@
 "use client";
 
-import type { AccountabilityItem, AccountabilityFile, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
+import type { AccountabilityItem, AccountabilityFile, AccountabilityPhaseTitles, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 import {
   collection,
   deleteDoc,
@@ -212,6 +212,57 @@ export async function updateAccountability(id: string, payload: Partial<Accounta
 export async function deleteAccountability(id: string) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
   await deleteDoc(doc(firebaseDb, "accountability", id));
+}
+
+export const defaultAccountabilityPhaseTitles: AccountabilityPhaseTitles = {
+  0: ["1. Designación al proceso de Rendición de cuentas", "2. Cronograma de Trabajo"],
+  1: [
+    "Informe preliminar 2025",
+    "Atención directa a la comunidad año 2025",
+    "Aprobación del Informe",
+    "Certificado emitido por el IESS",
+    "Parrilla de Programación 2025",
+    "Código Deontológico",
+    "Convenios de Cooperación Interinstitucional 2025",
+    "Licencia Soprofon",
+    "Procesos de contratación 2025",
+    "Estado Financieros año 2025",
+  ],
+  2: [
+    "Convocatoria a la deliberación Pública",
+    "Registro de llamadas telefónicas",
+    "Aporte de la Ciudadanía",
+    "Foto 1",
+    "Foto 2",
+    "Foto 3",
+    "Foto 4",
+    "Foto 5",
+  ],
+  3: [
+    "1. Informe Final de Rendición de cuentas 2025",
+    "AUDIO RENDICION DE CUENTAS",
+    "VIDEO RENDICION DE CUENTAS",
+  ],
+};
+
+export async function getAccountabilityPhaseTitles(): Promise<AccountabilityPhaseTitles> {
+  if (!firebaseDb) return defaultAccountabilityPhaseTitles;
+  const snap = await getDoc(doc(firebaseDb, "settings", "accountabilityPhaseTitles"));
+  if (!snap.exists()) return defaultAccountabilityPhaseTitles;
+  const data = snap.data() as Partial<Record<string, unknown>>;
+  const merged: AccountabilityPhaseTitles = { ...defaultAccountabilityPhaseTitles };
+  for (const phase of [0, 1, 2, 3] as const) {
+    const titles = data[String(phase)];
+    if (Array.isArray(titles) && titles.every((item) => typeof item === "string")) {
+      merged[phase] = titles;
+    }
+  }
+  return merged;
+}
+
+export async function saveAccountabilityPhaseTitles(payload: AccountabilityPhaseTitles) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  await setDoc(doc(firebaseDb, "settings", "accountabilityPhaseTitles"), payload, { merge: true });
 }
 
 // Locutores

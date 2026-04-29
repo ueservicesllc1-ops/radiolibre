@@ -3,28 +3,23 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { getAccountability } from "@/lib/cms";
-import type { AccountabilityItem } from "@/types/cms";
-import { FileText, Image as ImageIcon, Music, Video, Calendar, ChevronRight, X, Download, ExternalLink } from "lucide-react";
+import { defaultAccountabilityPhaseTitles, getAccountability, getAccountabilityPhaseTitles } from "@/lib/cms";
+import type { AccountabilityItem, AccountabilityPhaseTitles } from "@/types/cms";
+import { Download } from "lucide-react";
 
 export default function RendicionPage() {
   const [items, setItems] = useState<AccountabilityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFiles, setSelectedFiles] = useState<{ title: string; type: string; urls: string[] } | null>(null);
+  const [phaseTitles, setPhaseTitles] = useState<AccountabilityPhaseTitles>(defaultAccountabilityPhaseTitles);
 
   useEffect(() => {
-    getAccountability().then(setItems).finally(() => setLoading(false));
+    Promise.all([getAccountability(), getAccountabilityPhaseTitles()])
+      .then(([accountabilityItems, customTitles]) => {
+        setItems(accountabilityItems);
+        setPhaseTitles(customTitles);
+      })
+      .finally(() => setLoading(false));
   }, []);
-
-  // Agrupar por año
-  const years = Array.from(new Set(items.map((i) => i.year))).sort((a, b) => b.localeCompare(a));
-
-  const getFileName = (url: string) => {
-    const parts = url.split("/");
-    const name = parts[parts.length - 1];
-    // Quitar el UUID del principio (ej: UUID-nombre.ext)
-    return name.split("-").slice(1).join("-") || name;
-  };
 
   return (
     <main className="min-h-screen bg-white">
@@ -53,26 +48,7 @@ export default function RendicionPage() {
               {[0, 1, 2, 3].map((phaseNum) => {
                 const phaseEntries = items.filter((i) => i.year === "2025" && i.phase === phaseNum);
                 
-                const defaultTitles = 
-                  phaseNum === 0 ? [
-                    "1. Designación al proceso de Rendición de cuentas", 
-                    "2. Cronograma de Trabajo"
-                  ] :
-                  phaseNum === 1 ? [
-                    "Informe preliminar 2025", "Atención directa a la comunidad año 2025", "Aprobación del Informe", 
-                    "Certificado emitido por el IESS", "Parrilla de Programación 2025", "Código Deontológico", 
-                    "Convenios de Cooperación Interinstitucional 2025", "Licencia Soprofon", 
-                    "Procesos de contratación 2025", "Estado Financieros año 2025"
-                  ] :
-                  phaseNum === 2 ? [
-                    "Convocatoria a la deliberación Pública", "Registro de llamadas telefónicas", "Aporte de la Ciudadanía", 
-                    "Foto 1", "Foto 2", "Foto 3", "Foto 4", "Foto 5"
-                  ] :
-                  [
-                    "1. Informe Final de Rendición de cuentas 2025", 
-                    "AUDIO RENDICION DE CUENTAS", 
-                    "VIDEO RENDICION DE CUENTAS"
-                  ];
+                const defaultTitles = phaseTitles[phaseNum] || [];
 
                 return (
                   <div key={phaseNum} className="animate-in fade-in slide-in-from-bottom-4 duration-700">

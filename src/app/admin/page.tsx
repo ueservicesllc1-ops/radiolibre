@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { Pencil, Check, X } from "lucide-react";
 import { signInAnonymously } from "firebase/auth";
 import {
   addGalleryImage,
@@ -16,7 +17,10 @@ import {
   getManualNews,
   deleteManualNews,
   getAccountability,
+  getAccountabilityPhaseTitles,
   addAccountability,
+  defaultAccountabilityPhaseTitles,
+  saveAccountabilityPhaseTitles,
   updateAccountability,
   deleteAccountability,
   getLocutores,
@@ -31,7 +35,7 @@ import {
 } from "@/lib/cms";
 import { firebaseAuth, firebaseDb } from "@/lib/firebase-client";
 import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
-import type { AccountabilityFile, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
+import type { AccountabilityFile, AccountabilityPhaseTitles, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
 type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats";
@@ -82,6 +86,9 @@ export default function AdminPage() {
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [savingAcc, setSavingAcc] = useState(false);
   const [showAccForm, setShowAccForm] = useState(false);
+  const [phaseTitles, setPhaseTitles] = useState<AccountabilityPhaseTitles>(defaultAccountabilityPhaseTitles);
+  const [editingTitleKey, setEditingTitleKey] = useState<string | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState("");
   
   const [locutores, setLocutores] = useState<Locutor[]>([]);
   const [showLocForm, setShowLocForm] = useState(false);
@@ -109,6 +116,7 @@ export default function AdminPage() {
     getProgramming().then(setProgramming).catch(() => setProgramming(defaultProgramming));
     getManualNews().then(setNews).catch(() => setNews([]));
     getAccountability().then(setAccItems).catch(() => setAccItems([]));
+    getAccountabilityPhaseTitles().then(setPhaseTitles).catch(() => setPhaseTitles(defaultAccountabilityPhaseTitles));
     getLocutores().then(setLocutores).catch(() => setLocutores([]));
     getGalleryImages().then(setGalleryImages).catch(() => setGalleryImages([]));
     getContactMessages().then(setMessages).catch(() => setMessages([]));
@@ -211,6 +219,48 @@ export default function AdminPage() {
   async function refreshLocutores() {
     const items = await getLocutores().catch(() => []);
     setLocutores(items);
+  }
+
+  async function onSavePhaseTitle(phaseNum: number, titleIndex: number) {
+    const key = `${phaseNum}-${titleIndex}`;
+    const nextTitle = editingTitleValue.trim();
+    if (!nextTitle) {
+      setError("El nombre no puede estar vacio");
+      return;
+    }
+    const previousTitle = phaseTitles[phaseNum]?.[titleIndex] || "";
+    const normalizeTitle = (value: string) => value.toLowerCase().replace(/^\d+\.\s*/, "").trim();
+    const nextTitles: AccountabilityPhaseTitles = {
+      ...phaseTitles,
+      [phaseNum]: [...(phaseTitles[phaseNum] || [])],
+    };
+    nextTitles[phaseNum][titleIndex] = nextTitle;
+    setError("");
+    setSuccess("");
+    try {
+      await saveAccountabilityPhaseTitles(nextTitles);
+      // Keep uploaded file links visible after renaming a checklist item.
+      // Matching currently depends on file name/title text.
+      const renamedItems = accItems.filter(
+        (item) => item.year === "2025" && item.phase === phaseNum && Array.isArray(item.files) && item.files.length > 0,
+      );
+      for (const item of renamedItems) {
+        const nextFiles = item.files.map((file: AccountabilityFile) => {
+          if (normalizeTitle(file.name) === normalizeTitle(previousTitle)) {
+            return { ...file, name: nextTitle };
+          }
+          return file;
+        });
+        await updateAccountability(item.id, { files: nextFiles });
+      }
+      setPhaseTitles(nextTitles);
+      setAccItems(await getAccountability());
+      setEditingTitleKey(null);
+      setEditingTitleValue("");
+      setSuccess("Nombre actualizado");
+    } catch (err: any) {
+      setError("No se pudo guardar el nombre: " + (err.message || "Error desconocido"));
+    }
   }
 
   async function onSaveNewProgram(event: FormEvent) {
@@ -1266,25 +1316,7 @@ export default function AdminPage() {
                       <div className="mb-4 bg-zinc-50 p-3 rounded-lg border border-zinc-100">
                         <p className="text-[10px] font-black uppercase text-brand-night mb-2">Sugerencias Fase {accPhase} (2025):</p>
                         <div className="flex flex-wrap gap-2">
-                          {accPhase === 0 && ["Designación al proceso", "Cronograma de Trabajo"].map(t => (
-                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
-                          ))}
-                          {accPhase === 1 && [
-                            "Informe preliminar 2025", "Atención directa a la comunidad", "Aprobación del Informe", 
-                            "Certificado emitido por el IESS", "Parrilla de Programación 2025", "Código Deontológico", 
-                            "Convenios de Cooperación", "Licencia Soprofon", "Procesos de contratación", "Estado Financieros"
-                          ].map(t => (
-                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
-                          ))}
-                          {accPhase === 2 && [
-                            "Convocatoria deliberación Pública", "Registro de llamadas", "Aporte de la Ciudadanía", 
-                            "Foto 1", "Foto 2", "Foto 3", "Foto 4", "Foto 5"
-                          ].map(t => (
-                            <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
-                          ))}
-                          {accPhase === 3 && [
-                            "Informe Final 2025", "AUDIO RENDICION", "VIDEO RENDICION"
-                          ].map(t => (
+                          {(phaseTitles[accPhase] || []).map((t) => (
                             <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
                           ))}
                         </div>
@@ -1357,25 +1389,7 @@ export default function AdminPage() {
                 {[0, 1, 2, 3].map((phaseNum) => {
                   const phaseEntry = accItems.find(i => i.year === "2025" && i.phase === phaseNum);
                   
-                  const titles = 
-                    phaseNum === 0 ? [
-                      "1. Designación al proceso de Rendición de cuentas", "2. Cronograma de Trabajo"
-                    ] :
-                    phaseNum === 1 ? [
-                      "Informe preliminar 2025", "Atención directa a la comunidad año 2025", "Aprobación del Informe", 
-                      "Certificado emitido por el IESS", "Parrilla de Programación 2025", "Código Deontológico", 
-                      "Convenios de Cooperación Interinstitucional 2025", "Licencia Soprofon", 
-                      "Procesos de contratación 2025", "Estado Financieros año 2025"
-                    ] :
-                    phaseNum === 2 ? [
-                      "Convocatoria a la deliberación Pública", "Registro de llamadas telefónicas", "Aporte de la Ciudadanía", 
-                      "Foto 1", "Foto 2", "Foto 3", "Foto 4", "Foto 5"
-                    ] :
-                    [
-                      "1. Informe Final de Rendición de cuentas 2025", 
-                      "AUDIO RENDICION DE CUENTAS", 
-                      "VIDEO RENDICION DE CUENTAS"
-                    ];
+                  const titles = phaseTitles[phaseNum] || [];
 
                   return (
                     <div key={phaseNum} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
@@ -1385,18 +1399,68 @@ export default function AdminPage() {
                       </div>
                       
                       <div className="p-4 space-y-3">
-                        {titles.map((title) => {
+                        {titles.map((title, titleIndex) => {
+                          const titleKey = `${phaseNum}-${titleIndex}`;
+                          const isEditingTitle = editingTitleKey === titleKey;
                           const file = phaseEntry?.files?.find((f: any) => 
                             f.name.toLowerCase().includes(title.toLowerCase().replace(/^\d+\.\s*/, ""))
                           );
 
                           return (
-                            <div key={title} className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100 hover:border-brand-accent/30 transition">
-                              <span className={`text-xs font-bold ${file ? "text-brand-night" : "text-zinc-400"}`}>
-                                {file ? "✓ " : "○ "}{title}
-                              </span>
+                            <div key={titleKey} className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100 hover:border-brand-accent/30 transition">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className={`text-xs font-bold ${file ? "text-brand-night" : "text-zinc-400"}`}>
+                                  {file ? "✓ " : "○ "}
+                                </span>
+                                {isEditingTitle ? (
+                                  <input
+                                    value={editingTitleValue}
+                                    onChange={(event) => setEditingTitleValue(event.target.value)}
+                                    className="w-[320px] max-w-full rounded border border-zinc-300 px-2 py-1 text-xs font-bold text-brand-night"
+                                  />
+                                ) : (
+                                  <span className={`truncate text-xs font-bold ${file ? "text-brand-night" : "text-zinc-400"}`}>
+                                    {title}
+                                  </span>
+                                )}
+                              </div>
                               
                               <div className="flex gap-2">
+                                {isEditingTitle ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => onSavePhaseTitle(phaseNum, titleIndex)}
+                                      className="rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                                      aria-label="Guardar nombre"
+                                    >
+                                      <Check size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingTitleKey(null);
+                                        setEditingTitleValue("");
+                                      }}
+                                      className="rounded p-1 text-zinc-500 hover:bg-zinc-100"
+                                      aria-label="Cancelar edicion"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingTitleKey(titleKey);
+                                      setEditingTitleValue(title);
+                                    }}
+                                    className="rounded p-1 text-zinc-500 hover:bg-zinc-200"
+                                    aria-label="Editar nombre"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                )}
                                 {file && (
                                   <button 
                                     onClick={async () => {

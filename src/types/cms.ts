@@ -101,6 +101,8 @@ export interface AccountabilityItem {
   createdAt: number;
 }
 
+export type AccountabilityPhaseTitles = Record<number, string[]>;
+
 export interface Locutor {
   id: string;
   name: string;
