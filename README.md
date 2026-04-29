@@ -54,4 +54,4 @@ La seccion `Ahora en Vivo` ya esta preparada visualmente para conectar un stream
 
 Configura variables en `.env.local` tomando como base `.env.example`.
 
-Ultima actualizacion de docs: 2026-04-29 (trigger 2).
+Ultima actualizacion de docs: 2026-04-29.
