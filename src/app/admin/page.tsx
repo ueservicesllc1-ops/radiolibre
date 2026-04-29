@@ -38,6 +38,7 @@ import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestor
 import type { AccountabilityFile, AccountabilityPhaseTitles, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
+const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024; // 1 GB
 type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats";
 
 export default function AdminPage() {
@@ -1220,6 +1221,9 @@ export default function AdminPage() {
                       const uploadedFiles: AccountabilityFile[] = [];
 
                       for (const item of accFiles) {
+                        if (item.file.size > MAX_UPLOAD_BYTES) {
+                          throw new Error(`${item.name} supera el limite de 1 GB`);
+                        }
                         const formData = new FormData();
                         formData.append("file", item.file);
                         formData.append("folder", "accountability");
@@ -1338,6 +1342,12 @@ export default function AdminPage() {
                             type="file"
                             onChange={(e) => {
                               const f = e.target.files?.[0] || null;
+                              if (f && f.size > MAX_UPLOAD_BYTES) {
+                                setError("El archivo supera el limite de 1 GB");
+                                e.currentTarget.value = "";
+                                setCurrentFile(null);
+                                return;
+                              }
                               setCurrentFile(f);
                               if (f && !currentFileName) setCurrentFileName(f.name.split(".")[0]);
                             }}
@@ -1483,6 +1493,11 @@ export default function AdminPage() {
                                     onChange={async (e) => {
                                       const f = e.target.files?.[0];
                                       if (!f) return;
+                                      if (f.size > MAX_UPLOAD_BYTES) {
+                                        setError("El archivo supera el limite de 1 GB");
+                                        e.currentTarget.value = "";
+                                        return;
+                                      }
                                       
                                       setSavingAcc(true);
                                       try {

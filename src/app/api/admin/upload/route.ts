@@ -3,6 +3,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getB2ProxyUrl } from "@/lib/b2";
 
 export const runtime = "nodejs";
+const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024; // 1 GB
 
 const bucket = process.env.B2_BUCKET_NAME;
 const endpoint = process.env.B2_S3_ENDPOINT;
@@ -34,6 +35,9 @@ export async function POST(request: Request) {
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return Response.json({ error: "Archivo invalido" }, { status: 400 });
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return Response.json({ error: "El archivo supera el limite de 1 GB" }, { status: 413 });
   }
 
   const folderRaw = formData.get("folder");
