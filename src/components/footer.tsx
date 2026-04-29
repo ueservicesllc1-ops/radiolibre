@@ -78,7 +78,7 @@ export function Footer() {
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">
             Links rapidos
           </p>
-          <div className="mt-4 grid gap-2 text-xs text-white/70">
+          <div className="mt-4 grid gap-2 text-xs text-white/75">
             {navLinks.map((link) => (
               <a key={link.label} href={link.href} className="transition hover:text-brand-accent">
                 {link.label}
