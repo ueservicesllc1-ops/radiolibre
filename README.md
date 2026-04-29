@@ -53,5 +53,3 @@ La seccion `Ahora en Vivo` ya esta preparada visualmente para conectar un stream
 - **Helper de URLs**: `src/lib/b2.ts` incluye `getB2PublicUrl()` y `getB2ProxyUrl()`.
 
 Configura variables en `.env.local` tomando como base `.env.example`.
-
-Ultima actualizacion de docs: 2026-04-29.
