@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, Trash2 } from "lucide-react";
 import { signInAnonymously } from "firebase/auth";
 import {
   addGalleryImage,
@@ -280,6 +280,46 @@ export default function AdminPage() {
       setSuccess(`Nuevo item agregado en Fase ${phaseNum}`);
     } catch (err: any) {
       setError("No se pudo agregar el item: " + (err.message || "Error desconocido"));
+    }
+  }
+
+  async function onDeletePhaseTitle(phaseNum: number, titleIndex: number) {
+    const currentTitles = phaseTitles[phaseNum] || [];
+    const titleToDelete = currentTitles[titleIndex];
+    if (!titleToDelete) return;
+    const shouldDelete = confirm(`Eliminar "${titleToDelete}" de la Fase ${phaseNum}?`);
+    if (!shouldDelete) return;
+
+    const normalizeTitle = (value: string) => value.toLowerCase().replace(/^\d+\.\s*/, "").trim();
+    const nextTitlesForPhase = currentTitles.filter((_, index) => index !== titleIndex);
+    const nextTitles: AccountabilityPhaseTitles = {
+      ...phaseTitles,
+      [phaseNum]: nextTitlesForPhase,
+    };
+
+    setError("");
+    setSuccess("");
+    try {
+      await saveAccountabilityPhaseTitles(nextTitles);
+
+      const affectedItems = accItems.filter(
+        (item) => item.year === "2025" && item.phase === phaseNum && Array.isArray(item.files) && item.files.length > 0,
+      );
+
+      for (const item of affectedItems) {
+        const nextFiles = item.files.filter(
+          (file: AccountabilityFile) => normalizeTitle(file.name) !== normalizeTitle(titleToDelete),
+        );
+        if (nextFiles.length !== item.files.length) {
+          await updateAccountability(item.id, { files: nextFiles });
+        }
+      }
+
+      setPhaseTitles(nextTitles);
+      setAccItems(await getAccountability());
+      setSuccess(`Item eliminado en Fase ${phaseNum}`);
+    } catch (err: any) {
+      setError("No se pudo eliminar el item: " + (err.message || "Error desconocido"));
     }
   }
 
@@ -1464,6 +1504,14 @@ export default function AdminPage() {
                               </div>
                               
                               <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => onDeletePhaseTitle(phaseNum, titleIndex)}
+                                  className="rounded p-1 text-red-500 hover:bg-red-50"
+                                  aria-label="Eliminar item"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
                                 {isEditingTitle ? (
                                   <>
                                     <button
