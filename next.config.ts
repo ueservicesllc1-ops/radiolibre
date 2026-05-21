@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
+// Detectamos si estamos en Railway (donde necesitamos un servidor Node real para las rutas de la API)
+const isRailway = process.env.RAILWAY_ENVIRONMENT != null || process.env.RAILWAY_PROJECT_ID != null;
+
 const nextConfig: NextConfig = {
-  output: "export",
+  ...(isRailway ? {} : { output: "export" }),
   images: {
     unoptimized: true,
     remotePatterns: [
