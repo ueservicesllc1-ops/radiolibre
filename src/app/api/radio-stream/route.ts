@@ -18,23 +18,11 @@ function proxyHeaders(req: Request) {
 function buildResponseHeaders(upstream: Response) {
   const headers = new Headers();
   headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
-  headers.set("Pragma", "no-cache");
-  headers.set("Expires", "0");
-  headers.set("Content-Type", upstream.headers.get("content-type") || "audio/mpeg");
-
-  const passthrough = [
-    "content-type",
-    "content-length",
-    "accept-ranges",
-    "content-range",
-    "icy-name",
-    "icy-genre",
-    "icy-br",
-    "icy-url",
-    "icy-metaint",
-  ];
-
+  headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  headers.set("Content-Type", "audio/mpeg"); // Forzar mpeg para Android
+  
+  const passthrough = ["icy-name", "icy-metaint"];
   for (const key of passthrough) {
     const value = upstream.headers.get(key);
     if (value) headers.set(key, value);

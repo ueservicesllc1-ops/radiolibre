@@ -7,10 +7,10 @@ import { Pause, Play, Volume2 } from "lucide-react";
 import { defaultProgramming, getProgramming } from "@/lib/cms";
 import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
-const DIRECT_HTTPS_STREAM_URL =
-  process.env.NEXT_PUBLIC_RADIO_STREAM_URL ||
-  "https://cloudstream2036.conectarhosting.com:8146/stream";
-const PROXY_STREAM_URL = "/api/radio-stream";
+const SITE_ORIGIN = "https://radiolibre-production.up.railway.app";
+const PROXY_STREAM_URL = SITE_ORIGIN + "/api/radio-stream";
+const DIRECT_HTTPS_STREAM_URL = "https://cloudstream2036.conectarhosting.com:8146/stream";
+const DIRECT_HTTP_STREAM_URL = "http://cloudstream2036.conectarhosting.com:8146/stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -20,7 +20,24 @@ export function LivePlayer() {
   const [currentProgram, setCurrentProgram] = useState<ProgrammingItem | null>(null);
   const [volume, setVolume] = useState(0.67);
   const [streamIndex, setStreamIndex] = useState(0);
-  const streamSources = [DIRECT_HTTPS_STREAM_URL, PROXY_STREAM_URL];
+  
+  // 1. Definimos las señales
+  const PROXY_URL = "/api/radio-stream";
+  const DIRECT_HTTPS = "https://cloudstream2036.conectarhosting.com:8146/stream";
+  const DIRECT_HTTP = "http://cloudstream2036.conectarhosting.com:8146/stream";
+
+  const [streamSources, setStreamSources] = useState<string[]>([PROXY_URL, DIRECT_HTTPS]);
+
+  useEffect(() => {
+    const mobile = typeof window !== "undefined" && 
+      (window.location.hostname === "localhost" || 
+       window.location.protocol === "capacitor:" || 
+       (window as any).Capacitor);
+    
+    if (mobile) {
+      setStreamSources([DIRECT_HTTP, DIRECT_HTTPS]);
+    }
+  }, []);
 
   function parseMinutes(time: string) {
     const [hour, minute] = time.split(":").map(Number);
@@ -118,24 +135,27 @@ export function LivePlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    console.log("Toggle Play clicked. isPlaying:", isPlaying);
+    console.log("Current Source:", streamSources[streamIndex]);
+    
+    // TRUCO PARA ANDROID: Forzamos la carga de la URL justo antes de reproducir
+    audio.src = streamSources[streamIndex];
+    audio.load();
+
     setStreamError("");
     try {
       if (isPlaying) {
-        shouldAutoPlayRef.current = false;
         audio.pause();
         setIsPlaying(false);
         return;
       }
 
-      shouldAutoPlayRef.current = true;
-      // Safari iOS is more reliable when load() is called
-      // just before the user-initiated play().
-      audio.load();
       await audio.play();
       setIsPlaying(true);
-    } catch {
+    } catch (err: any) {
+      console.error("Playback failed:", err);
       setIsPlaying(false);
-      setStreamError("No se pudo iniciar el audio en vivo.");
+      setStreamError(`Error: ${err.message || "No se pudo iniciar el audio en vivo."}`);
     }
   }
 

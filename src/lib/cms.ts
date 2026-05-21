@@ -112,6 +112,8 @@ function normalizeProgrammingItem(item: ProgrammingItem): ProgrammingItem {
     description: item.description ?? "",
     slot: item.slot ?? "Manana",
     dayGroup: item.dayGroup ?? "everyday",
+    days: item.days ?? [],
+    order: item.order ?? 0,
   };
 }
 
@@ -123,7 +125,7 @@ export async function getProgramming(): Promise<ProgrammingItem[]> {
   if (!Array.isArray(data.items) || data.items.length === 0) {
     return defaultProgramming.map(normalizeProgrammingItem);
   }
-  return data.items.map(normalizeProgrammingItem);
+  return data.items.map(normalizeProgrammingItem).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 export async function saveProgramming(items: ProgrammingItem[]) {

@@ -53,7 +53,7 @@ export default function RendicionPage() {
                 return (
                   <div key={phaseNum} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <h2 className="text-2xl font-black text-white bg-brand-night inline-block px-6 py-2 mb-8 skew-x-[-10deg]">
-                      FASE {phaseNum}
+                      FASE {phaseNum + 1}
                     </h2>
                     
                     <div className="grid gap-2">

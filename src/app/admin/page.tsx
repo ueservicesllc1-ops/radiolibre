@@ -63,6 +63,8 @@ export default function AdminPage() {
   const [progCategory, setProgCategory] = useState("General");
   const [progDescription, setProgDescription] = useState("");
   const [progSlot, setProgSlot] = useState<"Manana" | "Tarde" | "Noche">("Manana");
+  const [progDays, setProgDays] = useState<string[]>([]);
+  const [progOrder, setProgOrder] = useState<number>(0);
   const [progPhoto, setProgPhoto] = useState<File | null>(null);
   const [savingProgram, setSavingProgram] = useState(false);
   const [caption, setCaption] = useState("");
@@ -185,6 +187,8 @@ export default function AdminPage() {
     setProgCategory("General");
     setProgDescription("");
     setProgSlot("Manana");
+    setProgDays([]);
+    setProgOrder(0);
     setProgPhoto(null);
     setEditingProgramId(null);
   }
@@ -364,6 +368,8 @@ export default function AdminPage() {
         description: progDescription.trim(),
         slot: progSlot,
         dayGroup: "everyday",
+        days: progDays,
+        order: progOrder,
       };
       if (photoUrl) {
         newItem.photoUrl = photoUrl;
@@ -416,6 +422,8 @@ export default function AdminPage() {
     setProgCategory(item.category || "General");
     setProgDescription(item.description || "");
     setProgSlot(item.slot || "Manana");
+    setProgDays(item.days || []);
+    setProgOrder(item.order || 0);
     setProgPhoto(null);
     setShowProgramForm(true);
     setError("");
@@ -951,6 +959,40 @@ export default function AdminPage() {
                     </div>
                     <div className="sm:col-span-2">
                       <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">
+                        Dias de transmision
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"].map((day) => (
+                          <label key={day} className="flex items-center gap-1 text-sm bg-white border border-zinc-300 px-3 py-1.5 rounded-md cursor-pointer hover:bg-zinc-50">
+                            <input
+                              type="checkbox"
+                              checked={progDays.includes(day)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setProgDays((prev) => [...prev, day]);
+                                } else {
+                                  setProgDays((prev) => prev.filter((d) => d !== day));
+                                }
+                              }}
+                            />
+                            {day}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">
+                        Orden (prioridad)
+                      </label>
+                      <input
+                        type="number"
+                        value={progOrder}
+                        onChange={(e) => setProgOrder(Number(e.target.value))}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">
                         Foto (opcional)
                       </label>
                       <input
@@ -1030,6 +1072,9 @@ export default function AdminPage() {
                         </p>
                         <p className="text-xs text-zinc-600">
                           {item.start} – {item.end}
+                        </p>
+                        <p className="mt-1 text-[10px] font-bold uppercase text-zinc-500">
+                          {item.days && item.days.length > 0 ? item.days.join(", ") : "Todos los dias"} (Orden: {item.order ?? 0})
                         </p>
                         <div className="mt-2 flex gap-3">
                           <button
@@ -1324,7 +1369,7 @@ export default function AdminPage() {
                   className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
                 >
                   <p className="text-sm font-bold text-brand-ink">
-                    {editingAccId ? "Editando Fase " + accPhase : "Nueva entrada de Rendicion"}
+                    {editingAccId ? "Editando Fase " + (accPhase + 1) : "Nueva entrada de Rendicion"}
                   </p>
                   <div className="mb-4 mt-4">
                     <label className="mb-2 block text-xs font-semibold uppercase text-zinc-600">Seleccionar Fase</label>
@@ -1338,7 +1383,7 @@ export default function AdminPage() {
                             accPhase === f ? "bg-brand-night text-brand-accent" : "bg-white text-zinc-600 border border-zinc-200"
                           }`}
                         >
-                          Fase {f}
+                          Fase {f + 1}
                         </button>
                       ))}
                     </div>
@@ -1377,7 +1422,7 @@ export default function AdminPage() {
                       
                       {/* Asistente de Titulos 2025 */}
                       <div className="mb-4 bg-zinc-50 p-3 rounded-lg border border-zinc-100">
-                        <p className="text-[10px] font-black uppercase text-brand-night mb-2">Sugerencias Fase {accPhase} (2025):</p>
+                        <p className="text-[10px] font-black uppercase text-brand-night mb-2">Sugerencias Fase {accPhase + 1} (2025):</p>
                         <div className="flex flex-wrap gap-2">
                           {(phaseTitles[accPhase] || []).map((t) => (
                             <button key={t} type="button" onClick={() => setCurrentFileName(t)} className="px-2 py-1 rounded bg-white border border-zinc-200 text-[10px] font-bold hover:border-brand-accent transition">{t}</button>
@@ -1448,7 +1493,7 @@ export default function AdminPage() {
                     disabled={savingAcc}
                     className="mt-6 w-full rounded-md bg-brand-night py-3 font-bold text-brand-accent shadow-lg"
                   >
-                    {savingAcc ? "Subiendo archivos..." : "Guardar Fase " + accPhase}
+                    {savingAcc ? "Subiendo archivos..." : "Guardar Fase " + (accPhase + 1)}
                   </button>
                 </form>
               )}
@@ -1463,7 +1508,7 @@ export default function AdminPage() {
                   return (
                     <div key={phaseNum} className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
                       <div className="bg-brand-night p-4 flex justify-between items-center">
-                        <h3 className="font-black text-brand-accent uppercase tracking-wider">Fase {phaseNum} (2025)</h3>
+                        <h3 className="font-black text-brand-accent uppercase tracking-wider">Fase {phaseNum + 1} (2025)</h3>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-bold text-white opacity-50 uppercase">Documentos Oficiales</span>
                           <button

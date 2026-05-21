@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permite HTTP cleartext a cualquier dominio (necesario para streaming de radio) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+    <!-- Dominio especifico de la radio -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">cloudstream2036.conectarhosting.com</domain>
+    </domain-config>
+</network-security-config>

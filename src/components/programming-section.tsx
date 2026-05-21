@@ -97,6 +97,10 @@ export function ProgrammingSection() {
                     <div className="mt-3 flex items-center gap-2 text-xs font-medium text-zinc-400">
                       <Clock3 size={14} className="text-brand-accent" />
                       {program.start} - {program.end}
+                      <span className="text-brand-accent/50 ml-2">|</span>
+                      <span className="ml-2 font-bold uppercase text-[10px] tracking-wider text-brand-accent">
+                        {program.days && program.days.length > 0 ? program.days.join(", ") : "Todos los dias"}
+                      </span>
                     </div>
                     <p className="mt-4 text-sm leading-relaxed text-zinc-500 line-clamp-3">
                       {program.description}

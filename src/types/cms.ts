@@ -74,6 +74,10 @@ export interface ProgrammingItem {
   slot?: "Manana" | "Tarde" | "Noche";
   /** Si no hay dateFrom/dateTo, filtra por dia de semana */
   dayGroup?: ProgrammingDayGroup;
+  /** Dias especificos de emision */
+  days?: string[];
+  /** Orden de visualizacion */
+  order?: number;
 }
 export interface ManualNewsItem {
   id: string;
