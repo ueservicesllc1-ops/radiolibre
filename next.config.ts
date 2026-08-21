@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
-// Detectamos si estamos en Railway (donde necesitamos un servidor Node real para las rutas de la API)
-const isRailway = process.env.RAILWAY_ENVIRONMENT != null || process.env.RAILWAY_PROJECT_ID != null;
+// Solo activamos export estático cuando se compila explícitamente para la app móvil (Capacitor)
+const isExport = process.env.NEXT_EXPORT === "true";
 
 const nextConfig: NextConfig = {
-  ...(isRailway ? {} : { output: "export" }),
+  ...(isExport ? { output: "export" } : {}),
   images: {
     unoptimized: true,
     remotePatterns: [
