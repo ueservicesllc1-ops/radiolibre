@@ -1,7 +1,14 @@
 export const runtime = "nodejs";
 
-const STREAM_SOURCE_URL =
-  process.env.RADIO_STREAM_URL || "https://pstnet11.shoutcastnet.com:10434/stream";
+function getStreamSourceUrl() {
+  const envUrl = process.env.RADIO_STREAM_SOURCE_URL || process.env.RADIO_STREAM_URL;
+  if (envUrl && !envUrl.includes("cloudstream2036") && !envUrl.includes("8146")) {
+    return envUrl;
+  }
+  return "http://pstnet11.shoutcastnet.com:10430/stream";
+}
+
+const STREAM_SOURCE_URL = getStreamSourceUrl();
 let activeListeners = 0;
 
 function proxyHeaders(req: Request) {

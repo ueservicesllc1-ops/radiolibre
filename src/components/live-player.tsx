@@ -22,11 +22,11 @@ export function LivePlayer() {
   const [streamIndex, setStreamIndex] = useState(0);
   
   // 1. Definimos las señales
-  const PROXY_URL = "/api/radio-stream";
   const DIRECT_HTTPS = "https://pstnet11.shoutcastnet.com:10434/stream";
+  const PROXY_URL = "/api/radio-stream";
   const DIRECT_HTTP = "http://pstnet11.shoutcastnet.com:10430/stream";
 
-  const [streamSources, setStreamSources] = useState<string[]>([PROXY_URL, DIRECT_HTTPS]);
+  const [streamSources, setStreamSources] = useState<string[]>([DIRECT_HTTPS, PROXY_URL]);
 
   useEffect(() => {
     const mobile = typeof window !== "undefined" && 
@@ -153,7 +153,20 @@ export function LivePlayer() {
       await audio.play();
       setIsPlaying(true);
     } catch (err: any) {
-      console.error("Playback failed:", err);
+      console.warn("Playback failed on primary source, trying fallback...", err);
+      if (streamIndex < streamSources.length - 1) {
+        const nextIndex = streamIndex + 1;
+        setStreamIndex(nextIndex);
+        audio.src = streamSources[nextIndex];
+        audio.load();
+        try {
+          await audio.play();
+          setIsPlaying(true);
+          return;
+        } catch (fallbackErr: any) {
+          console.error("Fallback playback failed:", fallbackErr);
+        }
+      }
       setIsPlaying(false);
       setStreamError(`Error: ${err.message || "No se pudo iniciar el audio en vivo."}`);
     }
