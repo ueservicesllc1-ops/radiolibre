@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 const STREAM_SOURCE_URL =
-  process.env.RADIO_STREAM_URL || "http://cloudstream2036.conectarhosting.com:8146/stream";
+  process.env.RADIO_STREAM_URL || "https://pstnet11.shoutcastnet.com:10434/stream";
 let activeListeners = 0;
 
 function proxyHeaders(req: Request) {
