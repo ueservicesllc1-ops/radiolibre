@@ -95,10 +95,20 @@ export default function AdminPage() {
   
   const [locutores, setLocutores] = useState<Locutor[]>([]);
   const [showLocForm, setShowLocForm] = useState(false);
+  const [editingLocutorId, setEditingLocutorId] = useState<string | null>(null);
   const [locName, setLocName] = useState("");
   const [locProgram, setLocProgram] = useState("");
   const [locSchedule, setLocSchedule] = useState("");
+  const [locDescription, setLocDescription] = useState("");
+  const [locDetails, setLocDetails] = useState("");
   const [locPhoto, setLocPhoto] = useState<File | null>(null);
+  const [locExistingPhotoUrl, setLocExistingPhotoUrl] = useState("");
+  const [locExistingPhotos, setLocExistingPhotos] = useState<string[]>([]);
+  const [locExtraPhotos, setLocExtraPhotos] = useState<File[]>([]);
+  const [locInstagram, setLocInstagram] = useState("");
+  const [locFacebook, setLocFacebook] = useState("");
+  const [locTiktok, setLocTiktok] = useState("");
+  const [locX, setLocX] = useState("");
   const [savingLoc, setSavingLoc] = useState(false);
 
   useEffect(() => {
@@ -205,10 +215,40 @@ export default function AdminPage() {
   }
 
   function resetLocForm() {
+    setEditingLocutorId(null);
     setLocName("");
     setLocProgram("");
     setLocSchedule("");
+    setLocDescription("");
+    setLocDetails("");
     setLocPhoto(null);
+    setLocExistingPhotoUrl("");
+    setLocExistingPhotos([]);
+    setLocExtraPhotos([]);
+    setLocInstagram("");
+    setLocFacebook("");
+    setLocTiktok("");
+    setLocX("");
+  }
+
+  function onEditLocutor(loc: Locutor) {
+    setEditingLocutorId(loc.id);
+    setLocName(loc.name || "");
+    setLocProgram(loc.program || "");
+    setLocSchedule(loc.schedule || "");
+    setLocDescription(loc.description || "");
+    setLocDetails(loc.details || "");
+    setLocPhoto(null);
+    setLocExistingPhotoUrl(loc.imageUrl || "");
+    setLocExistingPhotos(Array.isArray(loc.photos) ? [...loc.photos] : []);
+    setLocExtraPhotos([]);
+    setLocInstagram(loc.socials?.instagram || "");
+    setLocFacebook(loc.socials?.facebook || "");
+    setLocTiktok(loc.socials?.tiktok || "");
+    setLocX(loc.socials?.x || "");
+    setShowLocForm(true);
+    setError("");
+    setSuccess("");
   }
 
   async function refreshProgramming() {
@@ -1674,7 +1714,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-xl font-extrabold text-brand-ink">Locutores</h2>
                   <p className="mt-1 text-sm text-zinc-600">
-                    Gestiona los locutores que aparecen en la landing page.
+                    Gestiona nombres, fotos principales, galerías de fotos, descripciones, detalles y redes sociales de los locutores.
                   </p>
                 </div>
                 <button
@@ -1684,10 +1724,10 @@ export default function AdminPage() {
                     resetLocForm();
                     setShowLocForm((open) => !open);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-4 py-2 text-sm font-bold text-brand-night transition hover:bg-brand-accent-soft"
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-4 py-2 text-sm font-bold text-brand-night transition hover:bg-brand-accent-soft shadow-sm"
                 >
                   <span className="text-lg leading-none">{showLocForm ? "×" : "+"}</span>
-                  {showLocForm ? "Cerrar" : "Añadir locutor"}
+                  {showLocForm ? "Cerrar formulario" : "Añadir locutor"}
                 </button>
               </div>
 
@@ -1695,116 +1735,505 @@ export default function AdminPage() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    if (!locName.trim() || !locPhoto) {
-                      setError("Nombre y foto son obligatorios");
+                    if (!locName.trim()) {
+                      setError("El nombre del locutor es obligatorio");
                       return;
                     }
+                    if (!editingLocutorId && !locPhoto && !locExistingPhotoUrl) {
+                      setError("Debes subir una foto principal para el locutor");
+                      return;
+                    }
+
                     setSavingLoc(true);
                     setError("");
-                    try {
-                      const formData = new FormData();
-                      formData.append("file", locPhoto);
-                      formData.append("folder", "locutores");
-                      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-                      if (!res.ok) throw new Error("Error subiendo foto");
-                      const data = await res.json();
+                    setSuccess("");
 
-                      await addLocutor({
+                    try {
+                      let mainImageUrl = locExistingPhotoUrl;
+
+                      // 1. Subir foto principal si se seleccionó una nueva
+                      if (locPhoto) {
+                        const formData = new FormData();
+                        formData.append("file", locPhoto);
+                        formData.append("folder", "locutores");
+                        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                        if (!res.ok) {
+                          const errData = await res.json().catch(() => ({}));
+                          throw new Error(errData.error || "Error al subir foto principal");
+                        }
+                        const data = await res.json();
+                        mainImageUrl = data.url;
+                      }
+
+                      // 2. Subir fotos extras si las hay
+                      const newUploadedExtraUrls: string[] = [];
+                      for (const extraFile of locExtraPhotos) {
+                        const formData = new FormData();
+                        formData.append("file", extraFile);
+                        formData.append("folder", "locutores");
+                        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                        if (!res.ok) {
+                          const errData = await res.json().catch(() => ({}));
+                          throw new Error(errData.error || `Error al subir foto extra: ${extraFile.name}`);
+                        }
+                        const data = await res.json();
+                        newUploadedExtraUrls.push(data.url);
+                      }
+
+                      const finalPhotos = [...locExistingPhotos, ...newUploadedExtraUrls];
+
+                      const locPayload = {
                         name: locName.trim(),
                         program: locProgram.trim(),
                         schedule: locSchedule.trim(),
-                        imageUrl: data.url,
-                      });
+                        description: locDescription.trim(),
+                        details: locDetails.trim(),
+                        imageUrl: mainImageUrl,
+                        photos: finalPhotos,
+                        socials: {
+                          instagram: locInstagram.trim(),
+                          facebook: locFacebook.trim(),
+                          tiktok: locTiktok.trim(),
+                          x: locX.trim(),
+                        },
+                      };
+
+                      if (editingLocutorId) {
+                        await updateLocutor(editingLocutorId, locPayload);
+                        setSuccess("Locutor actualizado con éxito");
+                      } else {
+                        await addLocutor(locPayload);
+                        setSuccess("Locutor creado con éxito");
+                      }
 
                       await refreshLocutores();
                       resetLocForm();
                       setShowLocForm(false);
-                      setSuccess("Locutor añadido con éxito");
                     } catch (err: any) {
-                      setError("Error: " + err.message);
+                      console.error("Error guardando locutor:", err);
+                      setError("Error: " + (err.message || "No se pudo guardar el locutor"));
                     } finally {
                       setSavingLoc(false);
                     }
                   }}
-                  className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-inner"
                 >
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center justify-between border-b border-zinc-200 pb-3 mb-5">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Nombre</label>
+                      <h3 className="text-base font-black uppercase tracking-tight text-brand-ink">
+                        {editingLocutorId ? `Editando: ${locName || "Locutor"}` : "Nuevo Locutor"}
+                      </h3>
+                      <p className="text-xs text-zinc-500">
+                        {editingLocutorId ? "Modifica los campos necesarios y guarda los cambios." : "Completa la información del locutor para el sitio web."}
+                      </p>
+                    </div>
+                    {editingLocutorId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetLocForm();
+                          setShowLocForm(false);
+                        }}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-100"
+                      >
+                        Cancelar edición
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Datos Principales */}
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Nombre completo *
+                      </label>
                       <input
                         value={locName}
                         onChange={(e) => setLocName(e.target.value)}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-                        placeholder="Nombre del locutor"
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                        placeholder="Ej. Carlos Mendoza"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Programa</label>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Programa
+                      </label>
                       <input
                         value={locProgram}
                         onChange={(e) => setLocProgram(e.target.value)}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-                        placeholder="Nombre del programa"
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                        placeholder="Ej. Las Mañanas con Libre"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Horario</label>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Horario de emisión
+                      </label>
                       <input
                         value={locSchedule}
                         onChange={(e) => setLocSchedule(e.target.value)}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-                        placeholder="Ej: Lunes a Viernes 08:00 - 10:00"
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                        placeholder="Ej. Lunes a Viernes 08:00 - 11:00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Descripción y Detalles */}
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Descripción / Biografía
+                      </label>
+                      <textarea
+                        value={locDescription}
+                        onChange={(e) => setLocDescription(e.target.value)}
+                        rows={3}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                        placeholder="Breve reseña o biografía del locutor..."
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase text-zinc-600">Foto</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setLocPhoto(e.target.files?.[0] ?? null)}
-                        className="w-full text-xs"
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Detalles Adicionales / Trayectoria
+                      </label>
+                      <textarea
+                        value={locDetails}
+                        onChange={(e) => setLocDetails(e.target.value)}
+                        rows={3}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                        placeholder="Especialidades, gustos musicales, trayectoria en radio, segmentos..."
                       />
                     </div>
                   </div>
-                  <button
-                    disabled={savingLoc}
-                    className="mt-4 w-full rounded-lg bg-brand-night py-2 text-sm font-bold text-brand-accent transition hover:bg-brand-ink disabled:opacity-50"
-                  >
-                    {savingLoc ? "Guardando..." : "Guardar Locutor"}
-                  </button>
+
+                  {/* Redes Sociales */}
+                  <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-600">
+                      Redes Sociales del Locutor (Opcional)
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-zinc-500">Instagram</label>
+                        <input
+                          value={locInstagram}
+                          onChange={(e) => setLocInstagram(e.target.value)}
+                          placeholder="https://instagram.com/usuario"
+                          className="w-full rounded border border-zinc-200 px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-zinc-500">Facebook</label>
+                        <input
+                          value={locFacebook}
+                          onChange={(e) => setLocFacebook(e.target.value)}
+                          placeholder="https://facebook.com/usuario"
+                          className="w-full rounded border border-zinc-200 px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-zinc-500">TikTok</label>
+                        <input
+                          value={locTiktok}
+                          onChange={(e) => setLocTiktok(e.target.value)}
+                          placeholder="https://tiktok.com/@usuario"
+                          className="w-full rounded border border-zinc-200 px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-zinc-500">X (Twitter)</label>
+                        <input
+                          value={locX}
+                          onChange={(e) => setLocX(e.target.value)}
+                          placeholder="https://x.com/usuario"
+                          className="w-full rounded border border-zinc-200 px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Foto Principal */}
+                  <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-700">
+                      Foto Principal (Avatar / Portada) *
+                    </p>
+                    <div className="flex flex-wrap items-center gap-4">
+                      {locExistingPhotoUrl && (
+                        <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-zinc-200 shadow-sm">
+                          <Image
+                            src={locExistingPhotoUrl}
+                            alt="Foto actual"
+                            fill
+                            className="object-cover"
+                          />
+                          <span className="absolute bottom-0 inset-x-0 bg-black/70 text-center text-[9px] font-bold text-white py-0.5">
+                            Actual
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-[220px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setLocPhoto(e.target.files?.[0] ?? null)}
+                          className="w-full text-xs text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-night file:px-3 file:py-2 file:text-xs file:font-bold file:text-brand-accent hover:file:bg-brand-ink"
+                        />
+                        {locExistingPhotoUrl && (
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Deja este campo vacío si deseas conservar la foto actual.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Galería: Subir Más Fotos */}
+                  <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-700">
+                        Galería de Fotos Adicionales (Subir más fotos)
+                      </p>
+                      <span className="text-[11px] font-semibold text-zinc-500">
+                        Total: {locExistingPhotos.length + locExtraPhotos.length} fotos
+                      </span>
+                    </div>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          const selected = Array.from(e.target.files);
+                          setLocExtraPhotos((prev) => [...prev, ...selected]);
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                      className="w-full text-xs text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-zinc-700"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">
+                      Puedes seleccionar varias fotos a la vez para añadirlas al perfil del locutor.
+                    </p>
+
+                    {/* Fotos nuevas seleccionadas (por subir) */}
+                    {locExtraPhotos.length > 0 && (
+                      <div className="mt-3 border-t border-zinc-100 pt-3">
+                        <p className="text-[11px] font-bold uppercase text-brand-night mb-2">
+                          Fotos nuevas por subir ({locExtraPhotos.length}):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {locExtraPhotos.map((f, idx) => (
+                            <div key={idx} className="flex items-center gap-2 rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs text-zinc-700">
+                              <span className="max-w-[180px] truncate font-medium">{f.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setLocExtraPhotos(locExtraPhotos.filter((_, i) => i !== idx))}
+                                className="font-bold text-red-500 hover:text-red-700"
+                                title="Quitar de la lista"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fotos existentes guardadas */}
+                    {locExistingPhotos.length > 0 && (
+                      <div className="mt-3 border-t border-zinc-100 pt-3">
+                        <p className="text-[11px] font-bold uppercase text-zinc-600 mb-2">
+                          Fotos guardadas en galería ({locExistingPhotos.length}):
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                          {locExistingPhotos.map((photoUrl, idx) => (
+                            <div key={idx} className="group/photo relative aspect-square overflow-hidden rounded-lg border border-zinc-200">
+                              <Image
+                                src={photoUrl}
+                                alt={`Foto extra ${idx + 1}`}
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setLocExistingPhotos(locExistingPhotos.filter((_, i) => i !== idx))}
+                                className="absolute inset-0 flex items-center justify-center bg-red-900/80 text-xs font-bold text-white opacity-0 transition group-hover/photo:opacity-100"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={savingLoc}
+                      className="flex-1 rounded-xl bg-brand-night py-3 text-sm font-black uppercase tracking-wider text-brand-accent shadow-md transition hover:bg-brand-ink disabled:opacity-50"
+                    >
+                      {savingLoc ? "Guardando datos y fotos..." : editingLocutorId ? "Actualizar Locutor" : "Guardar Locutor"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingLoc}
+                      onClick={() => {
+                        resetLocForm();
+                        setShowLocForm(false);
+                      }}
+                      className="rounded-xl border border-zinc-300 bg-white px-6 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </form>
               )}
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {locutores.map((loc) => (
-                  <div key={loc.id} className="relative group overflow-hidden bg-white rounded-2xl border border-zinc-200 shadow-sm">
-                    <div className="aspect-square relative overflow-hidden">
-                      <Image
-                        src={loc.imageUrl}
-                        alt={loc.name}
-                        fill
-                        className="object-cover transition duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="text-brand-accent text-[10px] font-black uppercase tracking-widest">{loc.program}</p>
-                        <h3 className="text-white font-black text-lg leading-tight">{loc.name}</h3>
-                        <p className="text-white/60 text-[10px] font-bold mt-1">{loc.schedule}</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={async () => {
-                        if (confirm("¿Eliminar locutor?")) {
-                          await deleteLocutor(loc.id);
-                          await refreshLocutores();
-                        }
+              {/* Listado de Locutores */}
+              <div className="mt-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    Locutores Registrados ({locutores.length})
+                  </p>
+                </div>
+
+                {locutores.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-zinc-300 p-10 text-center">
+                    <p className="text-sm text-zinc-500">No hay locutores registrados aún.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetLocForm();
+                        setShowLocForm(true);
                       }}
-                      className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                      className="mt-3 inline-block rounded-full bg-brand-accent px-4 py-2 text-xs font-bold text-brand-night"
                     >
-                      <span className="text-xs">🗑️</span>
+                      + Añadir el primer locutor
                     </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {locutores.map((loc) => (
+                      <div
+                        key={loc.id}
+                        className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
+                      >
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+                          <Image
+                            src={loc.imageUrl}
+                            alt={loc.name}
+                            fill
+                            className="object-cover transition duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                          
+                          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                            {loc.program && (
+                              <span className="rounded bg-brand-accent px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-brand-night">
+                                {loc.program}
+                              </span>
+                            )}
+                            {Array.isArray(loc.photos) && loc.photos.length > 0 && (
+                              <span className="rounded bg-black/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-white">
+                                📸 +{loc.photos.length} fotos
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Acciones flotantes */}
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onEditLocutor(loc);
+                                window.scrollTo({ top: 200, behavior: "smooth" });
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 backdrop-blur-sm transition hover:bg-brand-accent hover:text-brand-night shadow-sm"
+                              title="Editar locutor"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (confirm(`¿Eliminar al locutor "${loc.name}"?`)) {
+                                  await deleteLocutor(loc.id);
+                                  await refreshLocutores();
+                                  setSuccess("Locutor eliminado");
+                                }
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/90 text-white backdrop-blur-sm transition hover:bg-red-700 shadow-sm"
+                              title="Eliminar locutor"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+
+                          <div className="absolute bottom-0 inset-x-0 p-4">
+                            <h3 className="text-lg font-black leading-tight text-white">{loc.name}</h3>
+                            {loc.schedule && (
+                              <p className="mt-0.5 text-[11px] font-semibold text-brand-accent">{loc.schedule}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Detalles de la tarjeta */}
+                        <div className="flex flex-1 flex-col justify-between p-4">
+                          <div className="space-y-2">
+                            {loc.description && (
+                              <p className="text-xs text-zinc-600 line-clamp-2">
+                                <span className="font-bold text-zinc-800">Bio: </span>
+                                {loc.description}
+                              </p>
+                            )}
+                            {loc.details && (
+                              <p className="text-xs text-zinc-500 line-clamp-2">
+                                <span className="font-bold text-zinc-700">Detalles: </span>
+                                {loc.details}
+                              </p>
+                            )}
+                            
+                            {/* Galería miniatura si tiene fotos adicionales */}
+                            {Array.isArray(loc.photos) && loc.photos.length > 0 && (
+                              <div className="pt-2">
+                                <p className="text-[10px] font-bold uppercase text-zinc-400 mb-1.5">Galería extra:</p>
+                                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                  {loc.photos.map((pUrl, pIdx) => (
+                                    <div key={pIdx} className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200">
+                                      <Image src={pUrl} alt="" fill className="object-cover" />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
+                            <div className="flex gap-2 text-xs text-zinc-400">
+                              {loc.socials?.instagram && <span title="Tiene Instagram">📸 IG</span>}
+                              {loc.socials?.facebook && <span title="Tiene Facebook">📘 FB</span>}
+                              {loc.socials?.tiktok && <span title="Tiene TikTok">🎵 TT</span>}
+                              {loc.socials?.x && <span title="Tiene X">✖️ X</span>}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onEditLocutor(loc);
+                                window.scrollTo({ top: 200, behavior: "smooth" });
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-800 transition hover:bg-brand-accent hover:text-brand-night"
+                            >
+                              <Pencil size={11} /> Editar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

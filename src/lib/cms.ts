@@ -273,17 +273,30 @@ export async function getLocutores(): Promise<Locutor[]> {
   const baseRef = collection(firebaseDb, "locutores");
   const q = query(baseRef, orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
-  return snap.docs.map((item) => ({
-    id: item.id,
-    ...(item.data() as any),
-  }));
+  return snap.docs.map((item) => {
+    const data = item.data();
+    return {
+      id: item.id,
+      name: String(data.name || ""),
+      program: String(data.program || ""),
+      schedule: String(data.schedule || ""),
+      imageUrl: String(data.imageUrl || ""),
+      photos: Array.isArray(data.photos) ? data.photos.filter((p: any) => typeof p === "string" && p) : [],
+      description: data.description ? String(data.description) : undefined,
+      details: data.details ? String(data.details) : undefined,
+      socials: data.socials && typeof data.socials === "object" ? data.socials : undefined,
+      order: typeof data.order === "number" ? data.order : undefined,
+      createdAt: Number(data.createdAt || Date.now()),
+    };
+  });
 }
 
 export async function addLocutor(data: Omit<Locutor, "id" | "createdAt">) {
   if (!firebaseDb) return;
   const col = collection(firebaseDb, "locutores");
-  await setDoc(doc(col), {
-    ...data,
+  const id = crypto.randomUUID();
+  await setDoc(doc(col, id), {
+    ...cleanPayload(data),
     createdAt: Date.now(),
   });
 }

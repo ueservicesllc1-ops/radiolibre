@@ -113,5 +113,15 @@ export interface Locutor {
   program: string;
   schedule: string;
   imageUrl: string;
+  photos?: string[];
+  description?: string;
+  details?: string;
+  socials?: {
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+    x?: string;
+  };
+  order?: number;
   createdAt: number;
 }
