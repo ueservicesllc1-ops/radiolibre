@@ -8,6 +8,6 @@
     </base-config>
     <!-- Dominio especifico de la radio -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">pstnet11.shoutcastnet.com</domain>
+        <domain includeSubdomains="true">pstnet4.shoutcastnet.com</domain>
     </domain-config>
 </network-security-config>
