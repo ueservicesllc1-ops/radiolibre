@@ -9,8 +9,8 @@ import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
 const SITE_ORIGIN = "https://radiolibre-production.up.railway.app";
 const PROXY_STREAM_URL = SITE_ORIGIN + "/api/radio-stream";
-const DIRECT_HTTPS_STREAM_URL = "https://pstnet4.shoutcastnet.com:40064/stream";
-const DIRECT_HTTP_STREAM_URL = "https://pstnet4.shoutcastnet.com:40064/stream";
+const DIRECT_HTTPS_STREAM_URL = "https://pstnet4.shoutcastnet.com:40194/stream";
+const DIRECT_HTTP_STREAM_URL = "http://pstnet4.shoutcastnet.com:40190/stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -22,9 +22,9 @@ export function LivePlayer() {
   const [streamIndex, setStreamIndex] = useState(0);
   
   // 1. Definimos las señales
-  const DIRECT_HTTPS = "https://pstnet4.shoutcastnet.com:40064/stream";
+  const DIRECT_HTTPS = DIRECT_HTTPS_STREAM_URL;
   const PROXY_URL = "/api/radio-stream";
-  const DIRECT_HTTP = "https://pstnet4.shoutcastnet.com:40064/stream";
+  const DIRECT_HTTP = DIRECT_HTTP_STREAM_URL;
 
   const [streamSources, setStreamSources] = useState<string[]>([DIRECT_HTTPS, PROXY_URL]);
 

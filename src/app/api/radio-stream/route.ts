@@ -2,10 +2,16 @@ export const runtime = "nodejs";
 
 function getStreamSourceUrl() {
   const envUrl = process.env.RADIO_STREAM_SOURCE_URL || process.env.RADIO_STREAM_URL;
-  if (envUrl && !envUrl.includes("cloudstream2036") && !envUrl.includes("8146")) {
+  if (
+    envUrl &&
+    !envUrl.includes("cloudstream2036") &&
+    !envUrl.includes("8146") &&
+    !envUrl.includes("40064") &&
+    !envUrl.includes("pstnet11")
+  ) {
     return envUrl;
   }
-  return "https://pstnet4.shoutcastnet.com:40064/stream";
+  return "https://pstnet4.shoutcastnet.com:40194/stream";
 }
 
 const STREAM_SOURCE_URL = getStreamSourceUrl();
