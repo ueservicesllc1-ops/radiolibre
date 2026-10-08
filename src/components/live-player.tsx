@@ -9,8 +9,8 @@ import type { ProgrammingDayGroup, ProgrammingItem } from "@/types/cms";
 
 const SITE_ORIGIN = "https://radiolibre-production.up.railway.app";
 const PROXY_STREAM_URL = SITE_ORIGIN + "/api/radio-stream";
-const DIRECT_HTTPS_STREAM_URL = "https://pstnet4.shoutcastnet.com:40194/stream";
-const DIRECT_HTTP_STREAM_URL = "http://pstnet4.shoutcastnet.com:40190/stream";
+const DIRECT_HTTPS_STREAM_URL = "https://cast6.my-control-panel.com/proxy/uservice/stream";
+const DIRECT_HTTP_STREAM_URL = "http://cast6.my-control-panel.com:7794/stream";
 
 export function LivePlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);

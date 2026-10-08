@@ -8,6 +8,9 @@
     </base-config>
     <!-- Dominio especifico de la radio -->
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">cast6.my-control-panel.com</domain>
+        <domain includeSubdomains="true">my-control-panel.com</domain>
+        <domain includeSubdomains="true">asurahosting.com</domain>
         <domain includeSubdomains="true">pstnet4.shoutcastnet.com</domain>
     </domain-config>
 </network-security-config>

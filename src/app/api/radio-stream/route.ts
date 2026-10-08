@@ -7,11 +7,12 @@ function getStreamSourceUrl() {
     !envUrl.includes("cloudstream2036") &&
     !envUrl.includes("8146") &&
     !envUrl.includes("40064") &&
-    !envUrl.includes("pstnet11")
+    !envUrl.includes("pstnet11") &&
+    !envUrl.includes("pstnet4")
   ) {
     return envUrl;
   }
-  return "https://pstnet4.shoutcastnet.com:40194/stream";
+  return "http://cast6.my-control-panel.com:7794/stream";
 }
 
 const STREAM_SOURCE_URL = getStreamSourceUrl();
