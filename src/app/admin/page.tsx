@@ -32,14 +32,20 @@ import {
   deleteMessage,
   getChatSessions,
   sendChatMessage,
+  getVideoOfTheWeek,
+  saveVideoOfTheWeek,
+  defaultVideoOfTheWeek,
+  getRanking,
+  saveRanking,
+  defaultRanking,
 } from "@/lib/cms";
 import { firebaseAuth, firebaseDb } from "@/lib/firebase-client";
 import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
-import type { AccountabilityFile, AccountabilityPhaseTitles, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
+import type { AccountabilityFile, AccountabilityPhaseTitles, Locutor, ManualNewsItem, ProgrammingItem, SocialLinks, ContactMessage, ChatMessage, ChatSession, VideoOfTheWeek, RankingSong } from "@/types/cms";
 
 const ADMIN_PIN = "1619";
 const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024; // 1 GB
-type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats";
+type AdminSection = "dashboard" | "socials" | "programming" | "gallery" | "news" | "accountability" | "locutores" | "messages" | "chats" | "video" | "ranking";
 
 export default function AdminPage() {
   const firebaseMissing = !firebaseAuth;
@@ -133,6 +139,8 @@ export default function AdminPage() {
     getLocutores().then(setLocutores).catch(() => setLocutores([]));
     getGalleryImages().then(setGalleryImages).catch(() => setGalleryImages([]));
     getContactMessages().then(setMessages).catch(() => setMessages([]));
+    getVideoOfTheWeek().then(setVideoOfTheWeek).catch(() => setVideoOfTheWeek(defaultVideoOfTheWeek));
+    getRanking().then(setRanking).catch(() => setRanking(defaultRanking));
   }, [unlocked]);
 
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
@@ -141,6 +149,21 @@ export default function AdminPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [adminChatText, setAdminChatText] = useState("");
+
+  // Video de la semana y Ranking
+  const [videoOfTheWeek, setVideoOfTheWeek] = useState<VideoOfTheWeek>(defaultVideoOfTheWeek);
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [videoThumbnailFile, setVideoThumbnailFile] = useState<File | null>(null);
+
+  const [ranking, setRanking] = useState<RankingSong[]>(defaultRanking);
+  const [savingRanking, setSavingRanking] = useState(false);
+  const [showSongForm, setShowSongForm] = useState(false);
+  const [editingSongId, setEditingSongId] = useState<string | null>(null);
+  const [songTitle, setSongTitle] = useState("");
+  const [songArtist, setSongArtist] = useState("");
+  const [songPosition, setSongPosition] = useState(1);
+  const [songCoverFile, setSongCoverFile] = useState<File | null>(null);
+  const [songExistingCover, setSongExistingCover] = useState("");
 
   useEffect(() => {
     if (!unlocked || !firebaseDb) return;
@@ -672,6 +695,28 @@ export default function AdminPage() {
             >
               Chats en Vivo
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("video")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "video"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Video de la Semana
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("ranking")}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                activeSection === "ranking"
+                  ? "bg-brand-accent text-brand-night"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              Ranking Musical
+            </button>
           </div>
         </aside>
 
@@ -841,6 +886,14 @@ export default function AdminPage() {
                         </div>
                         <p className="text-xs font-bold text-zinc-500 mb-4">{msg.email} • <span className="text-brand-ink">{msg.subject}</span></p>
                         <p className="text-sm text-zinc-700 whitespace-pre-wrap bg-zinc-50 p-4 rounded-xl border border-zinc-100">{msg.message}</p>
+                        {msg.audioUrl && (
+                          <div className="mt-3 p-3 bg-zinc-100 rounded-xl">
+                            <p className="text-xs font-bold text-zinc-600 mb-1 flex items-center gap-1.5">
+                              <span>🎙️</span> Nota de voz adjunta:
+                            </p>
+                            <audio controls src={msg.audioUrl} className="w-full h-10" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col gap-2">
                         {!msg.read && (
@@ -2291,6 +2344,352 @@ export default function AdminPage() {
                     Selecciona un chat para comenzar a responder.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeSection === "video" && (
+            <div>
+              <h2 className="text-xl font-extrabold text-brand-ink">Video de la Semana</h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Configura el video semanal que se muestra en la aplicación móvil y en la web.
+              </p>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setSavingVideo(true);
+                  setError("");
+                  setSuccess("");
+                  try {
+                    let thumbUrl = videoOfTheWeek.thumbnailUrl;
+                    if (videoThumbnailFile) {
+                      const formData = new FormData();
+                      formData.append("file", videoThumbnailFile);
+                      formData.append("folder", "video");
+                      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                      if (!res.ok) throw new Error("Error al subir portada del video");
+                      const data = await res.json();
+                      thumbUrl = data.url;
+                    }
+
+                    const payload: VideoOfTheWeek = {
+                      title: videoOfTheWeek.title.trim(),
+                      description: videoOfTheWeek.description?.trim() || "",
+                      videoUrl: videoOfTheWeek.videoUrl.trim(),
+                      thumbnailUrl: thumbUrl,
+                    };
+
+                    await saveVideoOfTheWeek(payload);
+                    setVideoOfTheWeek(payload);
+                    setVideoThumbnailFile(null);
+                    setSuccess("Video de la semana guardado con éxito");
+                  } catch (err: any) {
+                    setError("Error: " + (err.message || "No se pudo guardar el video"));
+                  } finally {
+                    setSavingVideo(false);
+                  }
+                }}
+                className="mt-6 space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-6"
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                    Título del Video *
+                  </label>
+                  <input
+                    required
+                    value={videoOfTheWeek.title}
+                    onChange={(e) => setVideoOfTheWeek((prev) => ({ ...prev, title: e.target.value }))}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                    placeholder="Ej. En Vivo: Especial de fin de semana con invitados"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                    URL del Video (YouTube o Enlace directo) *
+                  </label>
+                  <input
+                    required
+                    value={videoOfTheWeek.videoUrl}
+                    onChange={(e) => setVideoOfTheWeek((prev) => ({ ...prev, videoUrl: e.target.value }))}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                    placeholder="Ej. https://www.youtube.com/watch?v=..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                    Descripción del Video
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={videoOfTheWeek.description || ""}
+                    onChange={(e) => setVideoOfTheWeek((prev) => ({ ...prev, description: e.target.value }))}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                    placeholder="Breve reseña o información del video publicado..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-700">
+                    Portada / Miniatura del Video
+                  </label>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {videoOfTheWeek.thumbnailUrl && (
+                      <div className="relative aspect-video w-40 overflow-hidden rounded-xl border border-zinc-200">
+                        <Image
+                          src={videoThumbnailFile ? URL.createObjectURL(videoThumbnailFile) : videoOfTheWeek.thumbnailUrl}
+                          alt="Miniatura"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-[200px]">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setVideoThumbnailFile(e.target.files?.[0] || null)}
+                        className="w-full text-xs text-zinc-600"
+                      />
+                      <p className="mt-1 text-[11px] text-zinc-500">
+                        Sube una imagen atractiva (16:9) para la portada del video.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={savingVideo}
+                  className="rounded-xl bg-brand-night px-6 py-2.5 text-xs font-black uppercase tracking-wider text-brand-accent hover:bg-brand-ink disabled:opacity-50"
+                >
+                  {savingVideo ? "Guardando video..." : "Guardar Video de la Semana"}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {activeSection === "ranking" && (
+            <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-extrabold text-brand-ink">Ranking Musical Semanal</h2>
+                  <p className="mt-1 text-sm text-zinc-600">
+                    Administra las canciones, posiciones, carátulas y artistas del Ranking semanal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSongId(null);
+                    setSongTitle("");
+                    setSongArtist("");
+                    setSongPosition(ranking.length + 1);
+                    setSongCoverFile(null);
+                    setSongExistingCover("");
+                    setShowSongForm(!showSongForm);
+                  }}
+                  className="rounded-full bg-brand-accent px-4 py-2 text-xs font-black uppercase text-brand-night hover:bg-brand-accent-soft"
+                >
+                  {showSongForm ? "Cerrar formulario" : "+ Añadir canción"}
+                </button>
+              </div>
+
+              {showSongForm && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!songTitle.trim() || !songArtist.trim()) {
+                      setError("El título y el artista son obligatorios");
+                      return;
+                    }
+                    setSavingRanking(true);
+                    setError("");
+                    setSuccess("");
+                    try {
+                      let coverUrl = songExistingCover;
+                      if (songCoverFile) {
+                        const formData = new FormData();
+                        formData.append("file", songCoverFile);
+                        formData.append("folder", "ranking");
+                        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+                        if (!res.ok) throw new Error("Error al subir carátula");
+                        const data = await res.json();
+                        coverUrl = data.url;
+                      }
+
+                      const newSong: RankingSong = {
+                        id: editingSongId || crypto.randomUUID(),
+                        position: Number(songPosition) || 1,
+                        title: songTitle.trim(),
+                        artist: songArtist.trim(),
+                        coverUrl: coverUrl || defaultRanking[0]?.coverUrl,
+                        votes: 100,
+                      };
+
+                      let nextSongs: RankingSong[];
+                      if (editingSongId) {
+                        nextSongs = ranking.map((s) => (s.id === editingSongId ? newSong : s));
+                      } else {
+                        nextSongs = [...ranking, newSong];
+                      }
+                      nextSongs.sort((a, b) => a.position - b.position);
+
+                      await saveRanking(nextSongs);
+                      setRanking(nextSongs);
+                      setShowSongForm(false);
+                      setEditingSongId(null);
+                      setSongTitle("");
+                      setSongArtist("");
+                      setSongCoverFile(null);
+                      setSuccess(editingSongId ? "Canción actualizada" : "Canción agregada al ranking");
+                    } catch (err: any) {
+                      setError("Error: " + (err.message || "No se pudo guardar la canción"));
+                    } finally {
+                      setSavingRanking(false);
+                    }
+                  }}
+                  className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 space-y-4"
+                >
+                  <h3 className="text-sm font-black uppercase text-brand-ink">
+                    {editingSongId ? "Editar canción" : "Nueva canción del ranking"}
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase text-zinc-600">Posición *</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={songPosition}
+                        onChange={(e) => setSongPosition(Number(e.target.value))}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase text-zinc-600">Título de la canción *</label>
+                      <input
+                        value={songTitle}
+                        onChange={(e) => setSongTitle(e.target.value)}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                        placeholder="Ej. Si Antes Te Hubiera Conocido"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase text-zinc-600">Artista *</label>
+                      <input
+                        value={songArtist}
+                        onChange={(e) => setSongArtist(e.target.value)}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-accent"
+                        placeholder="Ej. Karol G"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase text-zinc-600">Carátula del álbum / sencillo</label>
+                    <div className="flex items-center gap-4">
+                      {(songCoverFile || songExistingCover) && (
+                        <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200">
+                          <Image
+                            src={songCoverFile ? URL.createObjectURL(songCoverFile) : songExistingCover}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setSongCoverFile(e.target.files?.[0] || null)}
+                        className="text-xs text-zinc-600"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={savingRanking}
+                      className="rounded-xl bg-brand-night px-6 py-2.5 text-xs font-black uppercase text-brand-accent hover:bg-brand-ink disabled:opacity-50"
+                    >
+                      {savingRanking ? "Guardando..." : "Guardar canción"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSongForm(false)}
+                      className="rounded-xl border border-zinc-300 px-4 py-2.5 text-xs font-bold text-zinc-700"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="mt-8 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  Canciones en el Ranking ({ranking.length})
+                </p>
+                <div className="grid gap-3">
+                  {ranking.map((song) => (
+                    <div
+                      key={song.id}
+                      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm hover:border-brand-accent/50 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-night text-sm font-black text-brand-accent">
+                          #{song.position}
+                        </span>
+                        {song.coverUrl && (
+                          <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-zinc-100">
+                            <Image src={song.coverUrl} alt={song.title} fill className="object-cover" unoptimized />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-bold text-brand-ink">{song.title}</p>
+                          <p className="text-xs text-zinc-500">{song.artist}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSongId(song.id);
+                            setSongTitle(song.title);
+                            setSongArtist(song.artist);
+                            setSongPosition(song.position);
+                            setSongExistingCover(song.coverUrl || "");
+                            setSongCoverFile(null);
+                            setShowSongForm(true);
+                            window.scrollTo({ top: 300, behavior: "smooth" });
+                          }}
+                          className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-800 hover:bg-brand-accent hover:text-brand-night"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`¿Eliminar "${song.title}" del ranking?`)) {
+                              const next = ranking.filter((s) => s.id !== song.id);
+                              await saveRanking(next);
+                              setRanking(next);
+                              setSuccess("Canción eliminada del ranking");
+                            }
+                          }}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

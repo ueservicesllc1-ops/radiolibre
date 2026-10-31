@@ -1,5 +1,10 @@
 import { getB2PublicUrl } from "@/lib/b2";
 
+export const dynamic = "force-static";
+export async function generateStaticParams() {
+  return [{ path: ["placeholder"] }];
+}
+
 const allowedOrigin = process.env.NEXT_PUBLIC_SITE_ORIGIN || "*";
 
 function buildCorsHeaders(contentType?: string | null, contentLength?: string | null) {

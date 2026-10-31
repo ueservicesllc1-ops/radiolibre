@@ -14,6 +14,8 @@ export interface ContactMessage {
   message: string;
   createdAt: number;
   read?: boolean;
+  audioUrl?: string;
+  audioDuration?: number;
 }
 
 export interface ChatMessage {
@@ -124,4 +126,23 @@ export interface Locutor {
   };
   order?: number;
   createdAt: number;
+}
+
+export interface VideoOfTheWeek {
+  id?: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  videoUrl: string;
+  updatedAt?: number;
+}
+
+export interface RankingSong {
+  id: string;
+  position: number;
+  title: string;
+  artist: string;
+  coverUrl?: string;
+  previewUrl?: string;
+  votes?: number;
 }

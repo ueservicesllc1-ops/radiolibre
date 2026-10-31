@@ -1,6 +1,6 @@
 "use client";
 
-import type { AccountabilityItem, AccountabilityFile, AccountabilityPhaseTitles, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage, ChatMessage, ChatSession } from "@/types/cms";
+import type { AccountabilityItem, AccountabilityFile, AccountabilityPhaseTitles, GalleryImage, ManualNewsItem, ProgrammingItem, SocialLinks, Locutor, ContactMessage, ChatMessage, ChatSession, VideoOfTheWeek, RankingSong } from "@/types/cms";
 import {
   collection,
   deleteDoc,
@@ -316,11 +316,11 @@ export async function deleteLocutor(id: string) {
 export async function saveContactMessage(payload: Omit<ContactMessage, "id" | "createdAt">) {
   if (!firebaseDb) throw new Error("Firebase no configurado");
   const id = crypto.randomUUID();
-  await setDoc(doc(firebaseDb, "messages", id), {
+  await setDoc(doc(firebaseDb, "messages", id), cleanPayload({
     ...payload,
     createdAt: Date.now(),
     read: false,
-  });
+  }));
 }
 
 export async function getContactMessages(): Promise<ContactMessage[]> {
@@ -336,6 +336,8 @@ export async function getContactMessages(): Promise<ContactMessage[]> {
       email: String(data.email || ""),
       subject: String(data.subject || ""),
       message: String(data.message || ""),
+      audioUrl: data.audioUrl ? String(data.audioUrl) : undefined,
+      audioDuration: typeof data.audioDuration === "number" ? data.audioDuration : undefined,
       createdAt: Number(data.createdAt || Date.now()),
       read: Boolean(data.read),
     };
@@ -399,5 +401,79 @@ export async function getChatSessions(): Promise<ChatSession[]> {
   const q = query(collection(firebaseDb, "chats"), orderBy("updatedAt", "desc"), limit(50));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatSession));
+}
+
+// Video de la Semana
+export const defaultVideoOfTheWeek: VideoOfTheWeek = {
+  title: "Radio Libre 93.9 FM - En Vivo desde Cabina",
+  description: "Revive los momentos más destacados de la semana con entrevistas exclusivas y la mejor música en vivo.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1200&q=80",
+  videoUrl: "https://www.youtube.com/watch?v=kXYiU_JCYtU",
+  updatedAt: Date.now(),
+};
+
+export async function getVideoOfTheWeek(): Promise<VideoOfTheWeek> {
+  if (!firebaseDb) return defaultVideoOfTheWeek;
+  const snap = await getDoc(doc(firebaseDb, "settings", "video_of_the_week"));
+  if (!snap.exists()) return defaultVideoOfTheWeek;
+  const data = snap.data() as Partial<VideoOfTheWeek>;
+  return {
+    title: data.title || defaultVideoOfTheWeek.title,
+    description: data.description !== undefined ? data.description : defaultVideoOfTheWeek.description,
+    thumbnailUrl: data.thumbnailUrl || defaultVideoOfTheWeek.thumbnailUrl,
+    videoUrl: data.videoUrl || defaultVideoOfTheWeek.videoUrl,
+    updatedAt: Number(data.updatedAt || Date.now()),
+  };
+}
+
+export async function saveVideoOfTheWeek(payload: VideoOfTheWeek) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const cleaned = cleanPayload({ ...payload, updatedAt: Date.now() });
+  await setDoc(doc(firebaseDb, "settings", "video_of_the_week"), cleaned, { merge: true });
+}
+
+// Ranking Musical
+export const defaultRanking: RankingSong[] = [
+  { id: "rank-1", position: 1, title: "Si Antes Te Hubiera Conocido", artist: "Karol G", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80", votes: 342 },
+  { id: "rank-2", position: 2, title: "Luna", artist: "Feid & ATL Jacob", coverUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80", votes: 298 },
+  { id: "rank-3", position: 3, title: "Mónaco", artist: "Bad Bunny", coverUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80", votes: 275 },
+  { id: "rank-4", position: 4, title: "Lala", artist: "Myke Towers", coverUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80", votes: 241 },
+  { id: "rank-5", position: 5, title: "La Bachata", artist: "Manuel Turizo", coverUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=600&q=80", votes: 210 },
+  { id: "rank-6", position: 6, title: "Diluvio", artist: "Rauw Alejandro", coverUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80", votes: 195 },
+  { id: "rank-7", position: 7, title: "Coco Loco", artist: "Maluma", coverUrl: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?auto=format&fit=crop&w=600&q=80", votes: 182 },
+  { id: "rank-8", position: 8, title: "Columbia", artist: "Quevedo", coverUrl: "https://images.unsplash.com/photo-1445985543469-433ecdd62977?auto=format&fit=crop&w=600&q=80", votes: 167 },
+  { id: "rank-9", position: 9, title: "Una Vida Pasada", artist: "Camilo & Carin Leon", coverUrl: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80", votes: 154 },
+  { id: "rank-10", position: 10, title: "Music Sessions #53", artist: "Bizarrap & Shakira", coverUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80", votes: 142 },
+];
+
+export async function getRanking(): Promise<RankingSong[]> {
+  if (!firebaseDb) return defaultRanking;
+  const snap = await getDoc(doc(firebaseDb, "settings", "ranking"));
+  if (!snap.exists()) return defaultRanking;
+  const data = snap.data() as { items?: RankingSong[] };
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    return defaultRanking;
+  }
+  return data.items.sort((a, b) => a.position - b.position);
+}
+
+export async function saveRanking(items: RankingSong[]) {
+  if (!firebaseDb) throw new Error("Firebase no configurado");
+  const cleanItems = items.map((item) =>
+    Object.fromEntries(Object.entries(item).filter(([_, v]) => v !== undefined))
+  );
+  await setDoc(doc(firebaseDb, "settings", "ranking"), { items: cleanItems }, { merge: true });
+}
+
+export async function voteRankingSong(id: string): Promise<void> {
+  if (!firebaseDb) return;
+  const ranking = await getRanking();
+  const next = ranking.map((song) => {
+    if (song.id === id) {
+      return { ...song, votes: (song.votes || 0) + 1 };
+    }
+    return song;
+  });
+  await saveRanking(next);
 }
 

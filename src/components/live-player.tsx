@@ -23,19 +23,19 @@ export function LivePlayer() {
   
   // 1. Definimos las señales
   const DIRECT_HTTPS = DIRECT_HTTPS_STREAM_URL;
-  const PROXY_URL = "/api/radio-stream";
+  const PROXY_URL = PROXY_STREAM_URL;
   const DIRECT_HTTP = DIRECT_HTTP_STREAM_URL;
 
-  const [streamSources, setStreamSources] = useState<string[]>([DIRECT_HTTPS, PROXY_URL]);
+  const [streamSources, setStreamSources] = useState<string[]>([DIRECT_HTTPS, PROXY_URL, DIRECT_HTTP]);
 
   useEffect(() => {
     const mobile = typeof window !== "undefined" && 
       (window.location.hostname === "localhost" || 
        window.location.protocol === "capacitor:" || 
-       (window as any).Capacitor);
+       Boolean((window as any).Capacitor));
     
     if (mobile) {
-      setStreamSources([DIRECT_HTTP, DIRECT_HTTPS]);
+      setStreamSources([DIRECT_HTTP, DIRECT_HTTPS, PROXY_STREAM_URL]);
     }
   }, []);
 
@@ -171,6 +171,52 @@ export function LivePlayer() {
       setStreamError(`Error: ${err.message || "No se pudo iniciar el audio en vivo."}`);
     }
   }
+
+  // MediaSession API para notificaciones de Android y pantalla de bloqueo
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentProgram?.name || "Radio Libre 93.9 FM",
+        artist: currentProgram?.host?.trim() ? currentProgram.host : "En Vivo - 93.9 FM",
+        album: "Radio Libre Guayaquil",
+        artwork: [
+          {
+            src: currentProgram?.photoUrl && currentProgram.photoUrl.startsWith("http")
+              ? currentProgram.photoUrl
+              : `${SITE_ORIGIN}/logo1.png`,
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      });
+
+      navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+
+      navigator.mediaSession.setActionHandler("play", () => {
+        togglePlay();
+      });
+
+      navigator.mediaSession.setActionHandler("pause", () => {
+        const audio = audioRef.current;
+        if (audio) {
+          audio.pause();
+          setIsPlaying(false);
+        }
+      });
+
+      navigator.mediaSession.setActionHandler("stop", () => {
+        const audio = audioRef.current;
+        if (audio) {
+          audio.pause();
+          setIsPlaying(false);
+        }
+      });
+    } catch (e) {
+      console.warn("MediaSession setup error:", e);
+    }
+  }, [currentProgram, isPlaying, streamIndex, streamSources]);
 
   useEffect(() => {
     const audio = audioRef.current;

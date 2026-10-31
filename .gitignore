@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android / Mobile keys and builds
+*.jks
+*.keystore
+/builds/
+android/app/build/
+android/build/
+android/.gradle/
+

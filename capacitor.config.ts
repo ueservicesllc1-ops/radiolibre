@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.radiolibre.app',
   appName: 'Radio Libre',
   webDir: 'out',
+  server: {
+    url: 'https://radiolibre-production.up.railway.app/app',
+    cleartext: true
+  },
   android: {
     allowMixedContent: true
   }

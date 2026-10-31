@@ -3,6 +3,11 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getB2ProxyUrl } from "@/lib/b2";
 
 export const runtime = "nodejs";
+export const dynamic = "force-static";
+
+export async function GET() {
+  return Response.json({ status: "ok" });
+}
 const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024; // 1 GB
 
 const bucket = process.env.B2_BUCKET_NAME;
@@ -42,7 +47,7 @@ export async function POST(request: Request) {
 
   const folderRaw = formData.get("folder");
   const folderStr = typeof folderRaw === "string" ? folderRaw.toLowerCase() : "";
-  const folder = ["programming", "news", "gallery", "accountability", "locutores"].includes(folderStr) ? folderStr : "gallery";
+  const folder = ["programming", "news", "gallery", "accountability", "locutores", "voicenotes", "video", "ranking"].includes(folderStr) ? folderStr : "gallery";
 
   try {
     const bytes = await file.arrayBuffer();

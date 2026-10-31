@@ -1,4 +1,5 @@
 export const runtime = "nodejs";
+export const dynamic = "force-static";
 
 function getStreamSourceUrl() {
   const envUrl = process.env.RADIO_STREAM_SOURCE_URL || process.env.RADIO_STREAM_URL;
