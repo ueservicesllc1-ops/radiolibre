@@ -1,0 +1,53 @@
+name: Build iOS IPA for Sideloadly
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build Unsigned IPA
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Build iOS App (.app) with Xcode
+        run: |
+          xcodebuild clean build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build/derived \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package App into IPA for Sideloadly
+        run: |
+          mkdir -p Payload
+          cp -r build/derived/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr RadioLibre.ipa Payload
+          mkdir -p dist
+          mv RadioLibre.ipa dist/
+
+      - name: Upload IPA for Sideloadly
+        uses: actions/upload-artifact@v4
+        with:
+          name: RadioLibre-iPad-Sideloadly
+          path: dist/RadioLibre.ipa
+          retention-days: 14
