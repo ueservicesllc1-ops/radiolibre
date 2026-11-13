@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.radiolibre.app',
+  appId: 'com.freedomlabs.radiolibre',
   appName: 'Radio Libre',
   webDir: 'out',
   server: {
