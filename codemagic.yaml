@@ -15,11 +15,16 @@ workflows:
       - name: Sync iOS Capacitor
         script: |
           npx cap sync ios
-      - name: Set up code signing (fetch or generate profiles automatically)
+      - name: Generate Apple Distribution Certificate and Provisioning Profile
         script: |
+          # Create distribution certificate if none exists in Apple Developer
+          app-store-connect create-certificate --type IOS_DISTRIBUTION || true
+          # Create and download provisioning profile for com.freedomlabs.radiolibre
           app-store-connect fetch-signing-files "com.freedomlabs.radiolibre" \
             --type IOS_APP_STORE \
             --create
+      - name: Set up code signing settings on Xcode project
+        script: |
           xcode-project use-profiles
       - name: Build and package IPA for App Store
         script: |
